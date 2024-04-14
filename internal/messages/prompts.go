@@ -1,6 +1,6 @@
-package offerings
+package messages
 
-// Prompts for the player's offerings.
+// prompts contains prompts to be randomly selected and shown to the player.
 var prompts = []string{
 	"A plant of medicinal value, key to the ritual's purpose, is needed. Which do you choose?",
 	"You feel an irresistible desire to relinquish a precious stone from your collection. What color is it?",
