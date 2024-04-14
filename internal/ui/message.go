@@ -8,21 +8,26 @@ import (
 
 // Message is a UI component that displays a message to the player.
 type Message struct {
-	text               string
-	isAcknowledged     bool
-	charactersRendered int
-	maxWidth           int
+	text                        string
+	awaitingAcknowledgementText string
+	isAcknowledged              bool
+	charactersRendered          int
+	maxWidth                    int
 }
 
 // NewMessage creates a new Message.
-func NewMessage(text string) *Message {
+func NewMessage(text string, awaitingAcknowledgementText string) *Message {
 	return &Message{
-		text: text,
+		text:                        text,
+		awaitingAcknowledgementText: awaitingAcknowledgementText,
 	}
 }
 
 // playInterval is the rate at which the message plays.
 const playInterval = 10 * time.Millisecond
+
+// AcknowledgeMsg is a tea.Msg used to indicate that the message has been acknowledged.
+type AcknowledgeMsg struct{}
 
 // nextCharMsg is a tea.Msg used to tell the model to play the next character.
 type nextCharMsg struct{}
@@ -34,7 +39,7 @@ func (m *Message) Init() tea.Cmd {
 
 // Update implements tea.Model by updating the model based on the given message.
 func (m *Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
+	switch msg := msg.(type) {
 	case nextCharMsg:
 		m.charactersRendered++
 		var cmd tea.Cmd
@@ -42,8 +47,13 @@ func (m *Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = tea.Tick(playInterval, nextChar)
 		}
 		return m, cmd
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyEnter && !m.isAcknowledged && m.charactersRendered == len(m.text) {
+			m.isAcknowledged = true
+			return m, func() tea.Msg { return AcknowledgeMsg{} }
+		}
 	case tea.WindowSizeMsg:
-		m.maxWidth = msg.(tea.WindowSizeMsg).Width
+		m.maxWidth = msg.Width
 		return m, nil
 	}
 
@@ -54,7 +64,13 @@ func (m *Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Message) View() string {
 	runes := []rune(m.text)
 	visibleText := string(runes[:m.charactersRendered])
-	return wordwrap.String(visibleText, m.maxWidth)
+	view := wordwrap.String(visibleText, m.maxWidth)
+
+	if m.charactersRendered == len(m.text) && !m.isAcknowledged {
+		view += "\n" + m.awaitingAcknowledgementText
+	}
+
+	return view
 }
 
 // nextChar is a tea.Cmd that tells the model to play the next character.

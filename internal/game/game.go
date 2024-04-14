@@ -70,7 +70,10 @@ func (g *Game) View() string {
 // updateGameState updates the game state.
 func (g *Game) updateGameState() tea.Msg {
 	if len(g.uiMessages) == 0 {
-		uiIntroMessage := ui.NewMessage(g.messageProvider.GetMessage(messages.IntroMessage))
+		uiIntroMessage := ui.NewMessage(
+			g.messageProvider.GetMessage(messages.IntroMessage),
+			g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+		)
 		return addUiMessageMsg{uiMessage: uiIntroMessage}
 	}
 
