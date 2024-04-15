@@ -3,6 +3,7 @@ package gen
 import (
 	"context"
 	"github.com/sashabaranov/go-openai"
+	"time"
 )
 
 // CreatureGenerator generates creature descriptions and images.
@@ -19,19 +20,23 @@ func NewCreatureGenerator(apiKey string) *CreatureGenerator {
 }
 
 func (g *CreatureGenerator) GenerateDescription() string {
-	// Todo: Set timeout.
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
 
-	request := openai.CompletionRequest{
-		Model:     openai.GPT3Dot5Turbo,
-		Prompt:    "Write a description of a creature",
-		MaxTokens: 200,
+	request := openai.ChatCompletionRequest{
+		Model: openai.GPT3Dot5Turbo,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: "Generate a creature description.",
+			},
+		},
 	}
 
-	response, err := g.openAiClient.CreateCompletion(ctx, request)
+	response, err := g.openAiClient.CreateChatCompletion(ctx, request)
 	if err != nil {
-		return "Your summoning has failed."
+		return "The summoning has failed."
 	}
 
-	return response.Choices[0].Text
+	return response.Choices[0].Message.Content
 }
