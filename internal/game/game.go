@@ -49,7 +49,7 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case addUiMessageMsg:
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
 		return g, msg.uiMessage.Init()
-	case ui.AcknowledgeMsg:
+	case ui.MessageResponseMsg:
 		return g, g.updateGameState
 	}
 
@@ -77,25 +77,28 @@ func (g *Game) updateGameState() tea.Msg {
 	case introState:
 		switch len(g.uiMessages) {
 		case 0:
+			uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
 			uiMessage := ui.NewMessage(
 				len(g.uiMessages),
 				g.messageProvider.GetMessage(messages.IntroMessage),
-				g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+				uiPlaceholder,
 			)
 			return addUiMessageMsg{uiMessage: uiMessage}
 		case 1:
+			uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
 			uiMessage := ui.NewMessage(
 				len(g.uiMessages),
 				g.messageProvider.GetMessage(messages.BeginRitualMessage),
-				g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+				uiPlaceholder,
 			)
 			return addUiMessageMsg{uiMessage: uiMessage}
 		default:
 			g.currentState = promptingState
+			uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
 			uiMessage := ui.NewMessage(
 				len(g.uiMessages),
 				g.messageProvider.GetPrompt(),
-				g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+				uiPlaceholder,
 			)
 			return addUiMessageMsg{uiMessage: uiMessage}
 		}
