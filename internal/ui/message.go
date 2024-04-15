@@ -30,7 +30,7 @@ const playInterval = 10 * time.Millisecond
 
 // MessageResponseMsg is a tea.Msg used to indicate that the message has been acknowledged.
 type MessageResponseMsg struct {
-	response string
+	Response string
 }
 
 // nextCharMsg is a tea.Msg used to tell the model to play the next character.
@@ -62,12 +62,17 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter && !m.responseReceived && m.charactersRendered == len(m.text) {
-			m.responseReceived = true
-
 			var response string
-			// Todo: Get response if the responseComponent is a text input.
+			if input, ok := m.responseComponent.(Input); ok {
+				response = input.Value()
+				if len(response) == 0 {
+					return m, nil
+				}
+				input.Disable()
+			}
 
-			return m, func() tea.Msg { return MessageResponseMsg{response: response} }
+			m.responseReceived = true
+			return m, func() tea.Msg { return MessageResponseMsg{Response: response} }
 		}
 	case tea.WindowSizeMsg:
 		m.maxWidth = msg.Width
@@ -86,6 +91,9 @@ func (m Message) View() string {
 	view := wordwrap.String(visibleText, m.maxWidth)
 
 	if m.responseReceived {
+		if _, ok := m.responseComponent.(Input); ok {
+			view += "\n" + m.responseComponent.View()
+		}
 		view += "\n\n"
 	} else {
 		if m.charactersRendered == len(m.text) {

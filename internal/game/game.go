@@ -1,7 +1,6 @@
 package game
 
 import (
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/ui"
@@ -12,6 +11,7 @@ type Game struct {
 	messageProvider *messages.MessageProvider
 	currentState    gameState
 	uiMessages      []ui.Message
+	playerResponses []string
 }
 
 // New creates a new Game.
@@ -36,7 +36,7 @@ type addUiMessageMsg struct {
 
 // Init implements tea.Model by returning a tea.Cmd that updates the game state.
 func (g *Game) Init() tea.Cmd {
-	return tea.Batch(g.updateGameState, textinput.Blink)
+	return g.updateGameState
 }
 
 // Update implements tea.Model by updating the model based on the given message.
@@ -50,6 +50,9 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
 		return g, msg.uiMessage.Init()
 	case ui.MessageResponseMsg:
+		if len(msg.Response) > 0 {
+			g.playerResponses = append(g.playerResponses, msg.Response)
+		}
 		return g, g.updateGameState
 	}
 
@@ -94,15 +97,22 @@ func (g *Game) updateGameState() tea.Msg {
 			return addUiMessageMsg{uiMessage: uiMessage}
 		default:
 			g.currentState = promptingState
-			uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
+			uiInput := ui.NewInput()
 			uiMessage := ui.NewMessage(
 				len(g.uiMessages),
 				g.messageProvider.GetPrompt(),
-				uiPlaceholder,
+				uiInput,
 			)
 			return addUiMessageMsg{uiMessage: uiMessage}
 		}
 	case promptingState:
+		uiInput := ui.NewInput()
+		uiMessage := ui.NewMessage(
+			len(g.uiMessages),
+			g.messageProvider.GetPrompt(),
+			uiInput,
+		)
+		return addUiMessageMsg{uiMessage: uiMessage}
 	}
 
 	return nil
