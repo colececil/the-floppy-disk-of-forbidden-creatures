@@ -10,6 +10,7 @@ import (
 type Game struct {
 	messageProvider *messages.MessageProvider
 	currentState    gameState
+	terminalWidth   int
 	uiMessages      []ui.Message
 	playerResponses []string
 }
@@ -46,6 +47,10 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Type == tea.KeyCtrlC || msg.Type == tea.KeyEsc {
 			return g, tea.Quit
 		}
+		// For all other key messages, don't return, since other components may need the key message.
+	case tea.WindowSizeMsg:
+		g.terminalWidth = msg.Width
+		// Don't return here, because other components also need to receive window size messages.
 	case addUiMessageMsg:
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
 		return g, msg.uiMessage.Init()
@@ -98,7 +103,7 @@ func (g *Game) updateGameState() tea.Msg {
 func (g *Game) addNewUiMessage(text string) tea.Msg {
 	id := len(g.uiMessages)
 	uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
-	uiMessage := ui.NewMessage(id, text, uiPlaceholder)
+	uiMessage := ui.NewMessage(id, text, uiPlaceholder, g.terminalWidth)
 	return addUiMessageMsg{uiMessage: uiMessage}
 }
 
@@ -106,6 +111,6 @@ func (g *Game) addNewUiMessage(text string) tea.Msg {
 func (g *Game) addNewUiPrompt() tea.Msg {
 	id := len(g.uiMessages)
 	uiInput := ui.NewInput(id)
-	uiMessage := ui.NewMessage(id, g.messageProvider.GetPrompt(), uiInput)
+	uiMessage := ui.NewMessage(id, g.messageProvider.GetPrompt(), uiInput, g.terminalWidth)
 	return addUiMessageMsg{uiMessage: uiMessage}
 }
