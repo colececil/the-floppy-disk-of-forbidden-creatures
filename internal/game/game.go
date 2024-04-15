@@ -80,40 +80,32 @@ func (g *Game) updateGameState() tea.Msg {
 	case introState:
 		switch len(g.uiMessages) {
 		case 0:
-			uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
-			uiMessage := ui.NewMessage(
-				len(g.uiMessages),
-				g.messageProvider.GetMessage(messages.IntroMessage),
-				uiPlaceholder,
-			)
-			return addUiMessageMsg{uiMessage: uiMessage}
+			return g.addNewUiMessage(g.messageProvider.GetMessage(messages.IntroMessage))
 		case 1:
-			uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
-			uiMessage := ui.NewMessage(
-				len(g.uiMessages),
-				g.messageProvider.GetMessage(messages.BeginRitualMessage),
-				uiPlaceholder,
-			)
-			return addUiMessageMsg{uiMessage: uiMessage}
+			return g.addNewUiMessage(g.messageProvider.GetMessage(messages.BeginRitualMessage))
 		default:
 			g.currentState = promptingState
-			uiInput := ui.NewInput()
-			uiMessage := ui.NewMessage(
-				len(g.uiMessages),
-				g.messageProvider.GetPrompt(),
-				uiInput,
-			)
-			return addUiMessageMsg{uiMessage: uiMessage}
+			return g.addNewUiPrompt()
 		}
 	case promptingState:
-		uiInput := ui.NewInput()
-		uiMessage := ui.NewMessage(
-			len(g.uiMessages),
-			g.messageProvider.GetPrompt(),
-			uiInput,
-		)
-		return addUiMessageMsg{uiMessage: uiMessage}
+		return g.addNewUiPrompt()
 	}
 
 	return nil
+}
+
+// addNewUiMessage adds a new message to the UI.
+func (g *Game) addNewUiMessage(text string) tea.Msg {
+	id := len(g.uiMessages)
+	uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
+	uiMessage := ui.NewMessage(id, text, uiPlaceholder)
+	return addUiMessageMsg{uiMessage: uiMessage}
+}
+
+// addNewUiPrompt adds a new prompt to the UI.
+func (g *Game) addNewUiPrompt() tea.Msg {
+	id := len(g.uiMessages)
+	uiInput := ui.NewInput(id)
+	uiMessage := ui.NewMessage(id, g.messageProvider.GetPrompt(), uiInput)
+	return addUiMessageMsg{uiMessage: uiMessage}
 }

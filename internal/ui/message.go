@@ -57,6 +57,10 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = tea.Tick(playInterval, func(t time.Time) tea.Msg {
 					return nextCharMsg{id: m.id}
 				})
+			} else {
+				if _, ok := m.responseComponent.(Input); ok {
+					cmd = func() tea.Msg { return InputSetEnabledMsg{Id: m.id, Enabled: true} }
+				}
 			}
 			return m, cmd
 		}
@@ -68,11 +72,14 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if len(response) == 0 {
 					return m, nil
 				}
-				input.Disable()
 			}
-
 			m.responseReceived = true
-			return m, func() tea.Msg { return MessageResponseMsg{Response: response} }
+
+			cmd := tea.Batch(
+				func() tea.Msg { return InputSetEnabledMsg{Id: m.id, Enabled: false} },
+				func() tea.Msg { return MessageResponseMsg{Response: response} },
+			)
+			return m, cmd
 		}
 	case tea.WindowSizeMsg:
 		m.maxWidth = msg.Width
