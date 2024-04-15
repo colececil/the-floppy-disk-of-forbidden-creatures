@@ -4,7 +4,7 @@ package messages
 type MessageKey int
 
 const (
-	IntroMessage = MessageKey(iota)
+	IntroMessage MessageKey = iota
 	BeginRitualMessage
 	AwaitingAcknowledgementMessage
 )

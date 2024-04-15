@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
-// Message is a UI component that displays a message to the player.
+// Message is a UI component that displays a message to the player. It implements tea.Model.
 type Message struct {
+	id                          int
 	text                        string
 	awaitingAcknowledgementText string
 	isAcknowledged              bool
@@ -16,8 +17,9 @@ type Message struct {
 }
 
 // NewMessage creates a new Message.
-func NewMessage(text string, awaitingAcknowledgementText string) *Message {
-	return &Message{
+func NewMessage(id int, text string, awaitingAcknowledgementText string) Message {
+	return Message{
+		id:                          id,
 		text:                        text,
 		awaitingAcknowledgementText: awaitingAcknowledgementText,
 	}
@@ -30,23 +32,31 @@ const playInterval = 10 * time.Millisecond
 type AcknowledgeMsg struct{}
 
 // nextCharMsg is a tea.Msg used to tell the model to play the next character.
-type nextCharMsg struct{}
+type nextCharMsg struct {
+	id int
+}
 
 // Init implements tea.Model by returning a tea.Cmd that schedules a nextCharMsg.
-func (m *Message) Init() tea.Cmd {
-	return tea.Tick(playInterval, nextChar)
+func (m Message) Init() tea.Cmd {
+	return tea.Tick(playInterval, func(t time.Time) tea.Msg {
+		return nextCharMsg{id: m.id}
+	})
 }
 
 // Update implements tea.Model by updating the model based on the given message.
-func (m *Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case nextCharMsg:
-		m.charactersRendered++
-		var cmd tea.Cmd
-		if m.charactersRendered < len(m.text) {
-			cmd = tea.Tick(playInterval, nextChar)
+		if msg.id == m.id {
+			m.charactersRendered++
+			var cmd tea.Cmd
+			if m.charactersRendered < len(m.text) {
+				cmd = tea.Tick(playInterval, func(t time.Time) tea.Msg {
+					return nextCharMsg{id: m.id}
+				})
+			}
+			return m, cmd
 		}
-		return m, cmd
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter && !m.isAcknowledged && m.charactersRendered == len(m.text) {
 			m.isAcknowledged = true
@@ -61,19 +71,18 @@ func (m *Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View implements tea.Model by returning the message as a string to be rendered.
-func (m *Message) View() string {
+func (m Message) View() string {
 	runes := []rune(m.text)
 	visibleText := string(runes[:m.charactersRendered])
 	view := wordwrap.String(visibleText, m.maxWidth)
 
-	if m.charactersRendered == len(m.text) && !m.isAcknowledged {
-		view += "\n" + m.awaitingAcknowledgementText
+	if m.isAcknowledged {
+		view += "\n\n"
+	} else {
+		if m.charactersRendered == len(m.text) {
+			view += "\n" + m.awaitingAcknowledgementText
+		}
 	}
 
 	return view
-}
-
-// nextChar is a tea.Cmd that tells the model to play the next character.
-func nextChar(_ time.Time) tea.Msg {
-	return nextCharMsg{}
 }

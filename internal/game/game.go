@@ -7,58 +7,62 @@ import (
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/ui"
 )
 
-// Game executes the game logic.
+// Game executes the game logic. It implements tea.Model.
 type Game struct {
 	messageProvider *messages.MessageProvider
-	uiMessages      []*ui.Message
-	uiInput         textinput.Model
+	currentState    gameState
+	uiMessages      []ui.Message
 }
 
-// NewGame creates a new Game.
-func NewGame() *Game {
+// New creates a new Game.
+func New() *Game {
 	return &Game{
 		messageProvider: messages.NewMessageProvider(),
-		uiInput:         textinput.New(),
 	}
 }
 
+// gameState represents the current state of the game.
+type gameState int
+
+const (
+	introState gameState = iota
+	promptingState
+)
+
 // addUiMessage adds a new message to the UI.
 type addUiMessageMsg struct {
-	uiMessage *ui.Message
+	uiMessage ui.Message
 }
 
-// Init performs initialization when the model is first created.
+// Init implements tea.Model by returning a tea.Cmd that updates the game state.
 func (g *Game) Init() tea.Cmd {
 	return tea.Batch(g.updateGameState, textinput.Blink)
 }
 
-// Update is called when a message is received, and it returns an updated model and an optional command.
+// Update implements tea.Model by updating the model based on the given message.
 func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+		if msg.Type == tea.KeyCtrlC || msg.Type == tea.KeyEsc {
 			return g, tea.Quit
 		}
 	case addUiMessageMsg:
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
 		return g, msg.uiMessage.Init()
+	case ui.AcknowledgeMsg:
+		return g, g.updateGameState
 	}
 
-	cmd := g.updateGameState
-
-	for _, uiMessage := range g.uiMessages {
-		_, uiMessageCmd := uiMessage.Update(msg)
+	var cmd tea.Cmd
+	for i, uiMessage := range g.uiMessages {
+		updatedUiMessage, uiMessageCmd := uiMessage.Update(msg)
+		g.uiMessages[i] = updatedUiMessage.(ui.Message)
 		cmd = tea.Batch(cmd, uiMessageCmd)
 	}
-
-	var inputCmd tea.Cmd
-	g.uiInput, inputCmd = g.uiInput.Update(msg)
-	cmd = tea.Batch(cmd, inputCmd)
-
 	return g, cmd
 }
 
-// View renders the model as a string to be printed. This is called after every Update.
+// View implements tea.Model by returning the model as a string to be rendered.
 func (g *Game) View() string {
 	var view string
 	for _, uiMessage := range g.uiMessages {
@@ -67,14 +71,35 @@ func (g *Game) View() string {
 	return view
 }
 
-// updateGameState updates the game state.
+// updateGameState advances the game state.
 func (g *Game) updateGameState() tea.Msg {
-	if len(g.uiMessages) == 0 {
-		uiIntroMessage := ui.NewMessage(
-			g.messageProvider.GetMessage(messages.IntroMessage),
-			g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
-		)
-		return addUiMessageMsg{uiMessage: uiIntroMessage}
+	switch g.currentState {
+	case introState:
+		switch len(g.uiMessages) {
+		case 0:
+			uiMessage := ui.NewMessage(
+				len(g.uiMessages),
+				g.messageProvider.GetMessage(messages.IntroMessage),
+				g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+			)
+			return addUiMessageMsg{uiMessage: uiMessage}
+		case 1:
+			uiMessage := ui.NewMessage(
+				len(g.uiMessages),
+				g.messageProvider.GetMessage(messages.BeginRitualMessage),
+				g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+			)
+			return addUiMessageMsg{uiMessage: uiMessage}
+		default:
+			g.currentState = promptingState
+			uiMessage := ui.NewMessage(
+				len(g.uiMessages),
+				g.messageProvider.GetPrompt(),
+				g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage),
+			)
+			return addUiMessageMsg{uiMessage: uiMessage}
+		}
+	case promptingState:
 	}
 
 	return nil
