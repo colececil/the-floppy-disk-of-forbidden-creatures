@@ -6,6 +6,7 @@ require (
 	github.com/charmbracelet/bubbles v0.18.0
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/muesli/reflow v0.3.0
+	github.com/sashabaranov/go-openai v1.21.0
 )
 
 require (

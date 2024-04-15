@@ -2,23 +2,27 @@ package game
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/gen"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/ui"
 )
 
 // Game executes the game logic. It implements tea.Model.
 type Game struct {
-	messageProvider *messages.MessageProvider
-	currentState    gameState
-	terminalWidth   int
-	uiMessages      []ui.Message
-	playerResponses []string
+	messageProvider   *messages.MessageProvider
+	creatureGenerator *gen.CreatureGenerator
+	currentState      gameState
+	terminalWidth     int
+	uiMessages        []ui.Message
+	uiSummoningCircle ui.SummoningCircle
+	playerResponses   []string
 }
 
-// New creates a new Game.
-func New() *Game {
+// New creates a new Game with the given OpenAI API key.
+func New(apiKey string) *Game {
 	return &Game{
-		messageProvider: messages.NewMessageProvider(),
+		messageProvider:   messages.NewMessageProvider(),
+		creatureGenerator: gen.NewCreatureGenerator(apiKey),
 	}
 }
 
@@ -28,12 +32,16 @@ type gameState int
 const (
 	introState gameState = iota
 	promptingState
+	summoningState
 )
 
 // addUiMessage adds a new message to the UI.
 type addUiMessageMsg struct {
 	uiMessage ui.Message
 }
+
+// beginSummoning initializes the summoning circle.
+type beginSummoningMsg struct{}
 
 // Init implements tea.Model by returning a tea.Cmd that updates the game state.
 func (g *Game) Init() tea.Cmd {
@@ -59,6 +67,15 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			g.playerResponses = append(g.playerResponses, msg.Response)
 		}
 		return g, g.updateGameState
+	case beginSummoningMsg:
+		g.uiMessages = nil
+		g.uiSummoningCircle = ui.NewSummoningCircle()
+
+		cmd := tea.Batch(
+			g.uiSummoningCircle.Init(),
+			g.generateCreatureDescription,
+		)
+		return g, cmd
 	}
 
 	var cmd tea.Cmd
@@ -72,6 +89,10 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model by returning the model as a string to be rendered.
 func (g *Game) View() string {
+	if g.currentState == summoningState && len(g.uiMessages) == 0 {
+		return g.uiSummoningCircle.View()
+	}
+
 	var view string
 	for _, uiMessage := range g.uiMessages {
 		view += uiMessage.View()
@@ -93,10 +114,22 @@ func (g *Game) updateGameState() tea.Msg {
 			return g.addNewUiPrompt()
 		}
 	case promptingState:
-		return g.addNewUiPrompt()
+		if len(g.playerResponses) < 5 {
+			return g.addNewUiPrompt()
+		} else {
+			g.currentState = summoningState
+			return beginSummoningMsg{}
+		}
+	case summoningState:
 	}
 
 	return nil
+}
+
+// generateCreatureDescription generates a description of the creature being summoned.
+func (g *Game) generateCreatureDescription() tea.Msg {
+	description := g.creatureGenerator.GenerateDescription()
+	return g.addNewUiMessage(description)
 }
 
 // addNewUiMessage adds a new message to the UI.
