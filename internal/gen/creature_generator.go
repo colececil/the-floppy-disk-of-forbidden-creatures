@@ -63,7 +63,9 @@ func (g *CreatureGenerator) GenerateDescription(creatureAttributes []string) str
 
 	response, err := g.openAiClient.CreateChatCompletion(ctx, request)
 	if err != nil {
-		return "The summoning has failed."
+		return "You expect to see a monstrous creature appear from the summoning circle, but you only see a small " +
+			"poof of smoke. Something has clearly gone wrong, but what? Cursing to yourself, you decide to cast the " +
+			"blame on technology."
 	}
 
 	return response.Choices[0].Message.Content
