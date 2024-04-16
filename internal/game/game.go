@@ -13,6 +13,7 @@ type Game struct {
 	creatureGenerator *gen.CreatureGenerator
 	currentState      gameState
 	terminalWidth     int
+	terminalHeight    int
 	uiMessages        []ui.Message
 	uiSummoningCircle ui.SummoningCircle
 	playerResponses   []string
@@ -61,6 +62,7 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// For all other key messages, don't return, since other components may need the key message.
 	case tea.WindowSizeMsg:
 		g.terminalWidth = msg.Width
+		g.terminalHeight = msg.Height
 		// Don't return here, because other components also need to receive window size messages.
 	case addUiMessageMsg:
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
@@ -72,7 +74,8 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return g, g.updateGameState
 	case beginSummoningMsg:
 		g.uiMessages = nil
-		g.uiSummoningCircle = ui.NewSummoningCircle()
+		g.uiSummoningCircle = ui.NewSummoningCircle(g.messageProvider.GetMessage(messages.SummoningMessage),
+			g.terminalWidth, g.terminalHeight)
 
 		cmd := tea.Batch(
 			g.uiSummoningCircle.Init(),
