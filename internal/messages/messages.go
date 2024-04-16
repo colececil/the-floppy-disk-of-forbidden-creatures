@@ -17,7 +17,7 @@ var messages = map[MessageKey]string{
 		"the Floppy Disk of Forbidden Creatures. And you know you have come here for a purpose - to summon a " +
 		"creature beyond your comprehension.",
 	BeginRitualMessage: "You begin the ritual...",
-	SummoningMessage:   "Summoning in progress",
+	SummoningMessage:   "Summoning in progress...",
 	EndingMessage: "Your summoning complete, you may now return to your own world. But will you regret what you have " +
 		"unleashed upon it?",
 	AwaitingAcknowledgementMessage: "<Press Enter to continue.>",
