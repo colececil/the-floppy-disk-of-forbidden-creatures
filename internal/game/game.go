@@ -128,7 +128,7 @@ func (g *Game) updateGameState() tea.Msg {
 
 // generateCreatureDescription generates a description of the creature being summoned.
 func (g *Game) generateCreatureDescription() tea.Msg {
-	description := g.creatureGenerator.GenerateDescription()
+	description := g.creatureGenerator.GenerateDescription(g.playerResponses)
 	return g.addNewUiMessage(description)
 }
 
