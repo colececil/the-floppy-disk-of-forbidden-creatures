@@ -20,3 +20,7 @@ Here are more specific command line instructions for each operating system:
   1. Open a terminal using the "Terminal" app.
   2. Copy the path to the directory the game was unzipped to. In the terminal, type `cd`, then a space, then paste the path to the directory and press enter. For example, if the game was unzipped to `/home/summon`, the command would be `cd /home/summon`.
   3. To run the game, type `./summon` and press enter. (If you get a permission error, make sure the `summon` file has executable permissions. You can add this by running the command `chmod +x summon`.)
+  
+## Technology Notes
+
+This game was written in [Go](https://go.dev/), using the [Bubble Tea](https://github.com/charmbracelet/bubbletea) framework. It also uses the [go-openai](https://github.com/sashabaranov/go-openai) library to call the OpenAI API.
