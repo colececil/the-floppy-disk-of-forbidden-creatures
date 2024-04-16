@@ -43,6 +43,9 @@ type addUiMessageMsg struct {
 // beginSummoning initializes the summoning circle.
 type beginSummoningMsg struct{}
 
+// exitGameMsg exits the game.
+type exitGameMsg struct{}
+
 // Init implements tea.Model by returning a tea.Cmd that updates the game state.
 func (g *Game) Init() tea.Cmd {
 	return g.updateGameState
@@ -76,6 +79,8 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			g.generateCreatureDescription,
 		)
 		return g, cmd
+	case exitGameMsg:
+		return g, tea.Quit
 	}
 
 	var cmd tea.Cmd
@@ -121,6 +126,10 @@ func (g *Game) updateGameState() tea.Msg {
 			return beginSummoningMsg{}
 		}
 	case summoningState:
+		if len(g.uiMessages) > 1 {
+			return exitGameMsg{}
+		}
+		return g.addNewUiMessage(g.messageProvider.GetMessage(messages.EndingMessage))
 	}
 
 	return nil
