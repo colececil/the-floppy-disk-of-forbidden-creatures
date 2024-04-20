@@ -92,6 +92,11 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		g.uiMessages[i] = updatedUiMessage.(ui.Message)
 		cmd = tea.Batch(cmd, uiMessageCmd)
 	}
+
+	updatedSummoningCircle, summoningCircleCmd := g.uiSummoningCircle.Update(msg)
+	g.uiSummoningCircle = updatedSummoningCircle.(ui.SummoningCircle)
+	cmd = tea.Batch(cmd, summoningCircleCmd)
+
 	return g, cmd
 }
 
