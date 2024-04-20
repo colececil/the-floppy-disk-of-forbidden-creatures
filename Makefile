@@ -1,32 +1,25 @@
 include .env
 
-build:
-	@echo "Building windows-amd64 version..."
-	@GOOS=windows GOARCH=amd64 go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/windows-amd64/summon.exe cmd/summon/summon.go
-	@echo "BEWARE." > bin/windows-amd64/README.txt
-	@echo "THAT WHICH YOU SUMMON SHALL BE FOREVER BOUND TO YOU." > bin/windows-amd64/EULA.txt
+README = "BEWARE."
+EULA = "THAT WHICH YOU SUMMON SHALL FOREVER BE BOUND TO YOU."
 
-	@echo "Building windows-arm64 version..."
-	@GOOS=windows GOARCH=arm64 go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/windows-arm64/summon.exe cmd/summon/summon.go
-	@echo "BEWARE." > bin/windows-arm64/README.txt
-	@echo "THAT WHICH YOU SUMMON SHALL BE FOREVER BOUND TO YOU." > bin/windows-arm64/EULA.txt
+.PHONY: build build-all clean
 
-	@echo "Building macos-amd64 version..."
-	@GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/macos-amd64/summon cmd/summon/summon.go
-	@echo "BEWARE." > bin/macos-amd64/README.txt
-	@echo "THAT WHICH YOU SUMMON SHALL BE FOREVER BOUND TO YOU." > bin/macos-amd64/EULA.txt
+build-all:
+	@echo "Building all versions..."
+	@$(MAKE) -s build OS=windows ARCH=amd64
+	@$(MAKE) -s build OS=windows ARCH=arm64
+	@$(MAKE) -s build OS=darwin ARCH=amd64
+	@$(MAKE) -s build OS=darwin ARCH=arm64
+	@$(MAKE) -s build OS=linux ARCH=amd64
+	@$(MAKE) -s build OS=linux ARCH=arm64
 
-	@echo "Building macos-arm64 version..."
-	@GOOS=darwin GOARCH=arm64 go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/macos-arm64/summon cmd/summon/summon.go
-	@echo "BEWARE." > bin/macos-arm64/README.txt
-	@echo "THAT WHICH YOU SUMMON SHALL BE FOREVER BOUND TO YOU." > bin/macos-arm64/EULA.txt
+build: clean
+	@echo "Building $(OS)-$(ARCH) version..."
+	@GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/$(OS)-$(ARCH)/summon cmd/summon/summon.go
+	@echo $(README) > bin/$(OS)-$(ARCH)/README.txt
+	@echo $(EULA) > bin/$(OS)-$(ARCH)/EULA.txt
 
-	@echo "Building linux-amd64 version..."
-	@GOOS=linux GOARCH=amd64 go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/linux-amd64/summon cmd/summon/summon.go
-	@echo "BEWARE." > bin/linux-amd64/README.txt
-	@echo "THAT WHICH YOU SUMMON SHALL BE FOREVER BOUND TO YOU." > bin/linux-amd64/EULA.txt
-
-	@echo "Building linux-arm64 version..."
-	@GOOS=linux GOARCH=arm64 go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/linux-arm64/summon cmd/summon/summon.go
-	@echo "BEWARE." > bin/linux-arm64/README.txt
-	@echo "THAT WHICH YOU SUMMON SHALL BE FOREVER BOUND TO YOU." > bin/linux-arm64/EULA.txt
+clean:
+	@echo "Cleaning $(OS)-$(ARCH) version..."
+	@rm -rf bin/$(OS)-$(ARCH)
