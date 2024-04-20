@@ -2,6 +2,7 @@ package gen
 
 import (
 	"context"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/sashabaranov/go-openai"
 	"strings"
 	"time"
@@ -9,35 +10,17 @@ import (
 
 // CreatureGenerator generates creature descriptions and images.
 type CreatureGenerator struct {
-	openAiClient *openai.Client
+	messageProvider *messages.MessageProvider
+	openAiClient    *openai.Client
 }
 
 // NewCreatureGenerator creates a new CreatureGenerator with the given OpenAI API key.
-func NewCreatureGenerator(apiKey string) *CreatureGenerator {
-	client := openai.NewClient(apiKey)
+func NewCreatureGenerator(messageProvider *messages.MessageProvider, apiKey string) *CreatureGenerator {
 	return &CreatureGenerator{
-		openAiClient: client,
+		messageProvider: messageProvider,
+		openAiClient:    openai.NewClient(apiKey),
 	}
 }
-
-const creatureDescriptionPrompt = "You are the narrator for a game about summoning monsters. Your task is to " +
-	"generate a description of the monster being summoned, based on several responses given by the player. The " +
-	"description should be a single paragraph, which both narrates the appearance of the monster from the summoning " +
-	"circle, and describes what the monster is like. It should also end with a narration explaining what becomes of " +
-	"the player (who should be addressed as \"you\") once the monster they summoned has appeared." +
-	"\n\n" +
-	"The responses given by the player may be things that can directly apply to the monster's appearance, or they " +
-	"indirectly provide an attribute of the monster. Please be creative and unpredictable in how the player's " +
-	"responses influence what the monster is like. Also, it's better if the description brings up the things " +
-	"influenced by the player responses in a different order than they are provided to you. It's also better if " +
-	"the description doesn't include the exact wording of the player responses, but applies them in a more subtle " +
-	"manner." +
-	"\n\n" +
-	"Please use descriptive language that paints a mental picture, and keep in mind that the game has a foreboding " +
-	"and Lovecraftian tone. Your response should be a single paragraph no longer than 8 sentences. Do not include " +
-	"anything other than the description in your response. The player responses are provided below, separated by " +
-	"commas:" +
-	"\n\n"
 
 // GenerateDescription generates a description of the creature being summoned, based on the given attributes.
 func (g *CreatureGenerator) GenerateDescription(creatureAttributes []string) string {
@@ -56,16 +39,14 @@ func (g *CreatureGenerator) GenerateDescription(creatureAttributes []string) str
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
-				Content: creatureDescriptionPrompt + creatureAttributesList,
+				Content: g.messageProvider.GetMessage(messages.CreatureDescriptionPrompt) + creatureAttributesList,
 			},
 		},
 	}
 
 	response, err := g.openAiClient.CreateChatCompletion(ctx, request)
 	if err != nil {
-		return "You expect to see a monstrous creature appear from the summoning circle, but you only see a small " +
-			"poof of smoke. Something has clearly gone wrong, but what? Cursing to yourself, you decide to cast the " +
-			"blame on technology."
+		return g.messageProvider.GetMessage(messages.SummoningErrorMessage)
 	}
 
 	return response.Choices[0].Message.Content

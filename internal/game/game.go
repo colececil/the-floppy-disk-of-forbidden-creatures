@@ -19,11 +19,11 @@ type Game struct {
 	playerResponses   []string
 }
 
-// New creates a new Game with the given OpenAI API key.
-func New(apiKey string) *Game {
+// New creates a new Game.
+func New(messageProvider *messages.MessageProvider, creatureGenerator *gen.CreatureGenerator) *Game {
 	return &Game{
-		messageProvider:   messages.NewMessageProvider(),
-		creatureGenerator: gen.NewCreatureGenerator(apiKey),
+		messageProvider:   messageProvider,
+		creatureGenerator: creatureGenerator,
 	}
 }
 
