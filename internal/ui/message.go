@@ -2,7 +2,6 @@ package ui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/muesli/reflow/wordwrap"
 	"time"
 )
 
@@ -13,16 +12,14 @@ type Message struct {
 	responseComponent  tea.Model
 	responseReceived   bool
 	charactersRendered int
-	maxWidth           int
 }
 
 // NewMessage creates a new Message.
-func NewMessage(id int, text string, responseComponent tea.Model, maxWidth int) Message {
+func NewMessage(id int, text string, responseComponent tea.Model) Message {
 	return Message{
 		id:                id,
 		text:              text,
 		responseComponent: responseComponent,
-		maxWidth:          maxWidth,
 	}
 }
 
@@ -92,9 +89,6 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			)
 			return m, cmd
 		}
-	case tea.WindowSizeMsg:
-		m.maxWidth = msg.Width
-		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -106,16 +100,19 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Message) View() string {
 	runes := []rune(m.text)
 	visibleText := string(runes[:m.charactersRendered])
-	view := wordwrap.String(visibleText, m.maxWidth)
+	view := WrapText(visibleText)
 
 	if m.responseReceived {
+		view = InactiveTextStyle.Render(view)
 		if _, ok := m.responseComponent.(Input); ok {
-			view += "\n" + m.responseComponent.View()
+			response := InactiveTextStyle.Render(m.responseComponent.View())
+			view += "\n" + response
 		}
 		view += "\n\n"
 	} else {
 		if m.charactersRendered == len(m.text) {
-			view += "\n" + m.responseComponent.View()
+			response := SecondaryTextStyle.Render(m.responseComponent.View())
+			view += "\n" + response
 		}
 	}
 

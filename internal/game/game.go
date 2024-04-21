@@ -12,8 +12,6 @@ type Game struct {
 	messageProvider   *messages.MessageProvider
 	creatureGenerator *gen.CreatureGenerator
 	currentState      gameState
-	terminalWidth     int
-	terminalHeight    int
 	uiMessages        []ui.Message
 	uiSummoningCircle ui.SummoningCircle
 	playerResponses   []string
@@ -61,9 +59,8 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// For all other key messages, don't return, since other components may need the key message.
 	case tea.WindowSizeMsg:
-		g.terminalWidth = msg.Width
-		g.terminalHeight = msg.Height
-		// Don't return here, because other components also need to receive window size messages.
+		ui.UpdateTerminalSize(msg.Width, msg.Height)
+		return g, nil
 	case addUiMessageMsg:
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
 		return g, msg.uiMessage.Init()
@@ -74,8 +71,7 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return g, g.updateGameState
 	case beginSummoningMsg:
 		g.uiMessages = nil
-		g.uiSummoningCircle = ui.NewSummoningCircle(g.messageProvider.GetMessage(messages.SummoningMessage),
-			g.terminalWidth, g.terminalHeight)
+		g.uiSummoningCircle = ui.NewSummoningCircle(g.messageProvider.GetMessage(messages.SummoningMessage))
 
 		cmd := tea.Batch(
 			g.uiSummoningCircle.Init(),
@@ -110,7 +106,7 @@ func (g *Game) View() string {
 	for _, uiMessage := range g.uiMessages {
 		view += uiMessage.View()
 	}
-	return view
+	return ui.BaseStyle.Render(view)
 }
 
 // updateGameState advances the game state.
@@ -153,7 +149,7 @@ func (g *Game) generateCreatureDescription() tea.Msg {
 func (g *Game) addNewUiMessage(text string) tea.Msg {
 	id := len(g.uiMessages)
 	uiPlaceholder := ui.NewPlaceholder(g.messageProvider.GetMessage(messages.AwaitingAcknowledgementMessage))
-	uiMessage := ui.NewMessage(id, text, uiPlaceholder, g.terminalWidth)
+	uiMessage := ui.NewMessage(id, text, uiPlaceholder)
 	return addUiMessageMsg{uiMessage: uiMessage}
 }
 
@@ -161,6 +157,6 @@ func (g *Game) addNewUiMessage(text string) tea.Msg {
 func (g *Game) addNewUiPrompt() tea.Msg {
 	id := len(g.uiMessages)
 	uiInput := ui.NewInput(id)
-	uiMessage := ui.NewMessage(id, g.messageProvider.GetPrompt(), uiInput, g.terminalWidth)
+	uiMessage := ui.NewMessage(id, g.messageProvider.GetPrompt(), uiInput)
 	return addUiMessageMsg{uiMessage: uiMessage}
 }
