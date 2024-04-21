@@ -49,7 +49,7 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case nextCharMsg:
 		if msg.id == m.id {
-			m.charactersRendered++
+			m.charactersRendered = min(m.charactersRendered+1, len(m.text))
 			var cmd tea.Cmd
 			if m.charactersRendered < len(m.text) {
 				// Not all characters have been rendered yet, so schedule another tick.
@@ -67,7 +67,13 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.KeyMsg:
 		// If the presses Enter after the message has been fully rendered, send the response.
-		if msg.Type == tea.KeyEnter && !m.responseReceived && m.charactersRendered == len(m.text) {
+		if msg.Type == tea.KeyEnter && !m.responseReceived {
+			if m.charactersRendered != len(m.text) {
+				// The message has not yet been fully rendered. Just skip to the end of the animation.
+				m.charactersRendered = len(m.text)
+				return m, func() tea.Msg { return nextCharMsg{id: m.id} }
+			}
+
 			var cmd tea.Cmd
 			var response string
 
