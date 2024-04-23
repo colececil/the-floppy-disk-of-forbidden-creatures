@@ -2,6 +2,8 @@ package ui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"strings"
 	"time"
 )
 
@@ -51,6 +53,37 @@ func (c SummoningCircle) View() string {
 		dots += "."
 	}
 
-	style := StyleWithCentering(FocusedTextStyle, len([]rune(c.summoningMessage)), 1)
-	return style.Render(c.summoningMessage + dots)
+	// Get width and height of summoning circle ascii art
+	asciiArtLines := strings.Split(asciiArt, "\n")
+	asciiArtWidth := len([]rune(asciiArtLines[0]))
+	asciiArtHeight := len(asciiArtLines)
+	text := lipgloss.PlaceHorizontal(asciiArtWidth-2, lipgloss.Center, c.summoningMessage)
+	text = strings.TrimRight(text, " ") + dots
+	return StyleWithCentering(FocusedTextStyle, asciiArtWidth, asciiArtHeight+4).
+		Render(asciiArt + "\n\n" + text)
 }
+
+const asciiArt = `                 @@@@@@@@@@@                 
+             @@@@           @@@@@            
+          @@@     @@@@@@@@@@@   @@           
+        @@    @@@   @        @@@   @         
+      @@   @@@     @@@          @@   @@      
+     @@   @       @@  @@          @@   @@    
+   @@   @@        @    @@           @@  @@   
+  @   @@         @      @@            @  @@  
+ @   @@         @@      @@@@@@@@@@@@@@@@  @@ 
+@@   @     @@@@@@@@@@@@@@@@@@@      @@ @  @@ 
+@@  @@@@@@@@   @@          @@@    @@   @   @@
+@@  @@  @@@@@ @@            @@  @@     @@  @@
+@@  @@      @@@@@           @@@@       @@  @@
+@@  @@       @@@@@@       @@@  @@      @   @@
+@@   @@     @@    @@@@ @@@      @@    @@   @ 
+ @@  @@     @       @@@@@@@      @@   @   @@ 
+ @@   @@   @@    @@@       @@@@@   @ @@  @@  
+  @@   @@@@@ @@@@              @@@@@@   @@   
+   @@    @@@@                   @@@   @@     
+    @@     @@@                @@     @@      
+      @@@     @@@@@@@@@@@ @@@@    @@@        
+         @@@                   @@@           
+            @@@@@@@@@@@@@@@@@@@              
+`
