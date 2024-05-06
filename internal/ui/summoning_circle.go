@@ -53,14 +53,17 @@ func (c SummoningCircle) View() string {
 		dots += "."
 	}
 
-	// Get width and height of summoning circle ascii art
-	asciiArtLines := strings.Split(asciiArt, "\n")
-	asciiArtWidth := len([]rune(asciiArtLines[0]))
-	asciiArtHeight := len(asciiArtLines)
-	text := lipgloss.PlaceHorizontal(asciiArtWidth-2, lipgloss.Center, c.summoningMessage)
-	text = strings.TrimRight(text, " ") + dots
-	return StyleWithCentering(FocusedTextStyle, asciiArtWidth, asciiArtHeight+4).
-		Render(asciiArt + "\n\n" + text)
+	view := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, asciiArt)
+	text := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, c.summoningMessage)
+	text = FocusedTextStyle.Copy().
+		Width(terminalWidth).
+		Height(1).
+		MarginTop(1).
+		Render(strings.TrimRight(text, " ") + dots)
+	view = lipgloss.JoinVertical(lipgloss.Left, view, text)
+	view = lipgloss.PlaceVertical(terminalHeight, lipgloss.Center, view,
+		lipgloss.WithWhitespaceBackground(backgroundColor))
+	return BaseStyle.Render(view)
 }
 
 const asciiArt = `                 @@@@@@@@@@@                 

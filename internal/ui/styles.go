@@ -44,12 +44,3 @@ func UpdateTerminalSize(w, h int) {
 func WrapText(text string) string {
 	return wordwrap.String(text, terminalWidth)
 }
-
-// StyleWithCentering returns a new style based on the given style, with the content centered in the terminal. The given
-// content width and height are used to calculate the padding.
-func StyleWithCentering(style lipgloss.Style, contentWidth int, contentHeight int) lipgloss.Style {
-	return style.Copy().
-		PaddingTop((terminalHeight / 2) - (contentHeight / 2)).
-		PaddingLeft((terminalWidth / 2) - (contentWidth / 2)).
-		Inherit(BaseStyle)
-}
