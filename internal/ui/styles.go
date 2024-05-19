@@ -2,7 +2,6 @@ package ui
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/reflow/wordwrap"
 )
 
 const (
@@ -16,7 +15,8 @@ var terminalWidth, terminalHeight int
 
 var BaseStyle = lipgloss.NewStyle().
 	Background(backgroundColor).
-	Foreground(textColor)
+	Foreground(textColor).
+	Width(terminalWidth)
 
 var SecondaryTextStyle = lipgloss.NewStyle().
 	Foreground(secondaryTextColor).
@@ -27,20 +27,27 @@ var InactiveTextStyle = lipgloss.NewStyle().
 	Inherit(BaseStyle)
 
 var FocusedTextStyle = lipgloss.NewStyle().
-	Foreground(textColor).
 	Bold(true).
+	Inherit(BaseStyle)
+
+var WrappedTextStyle = lipgloss.NewStyle().
+	Width(terminalWidth)
+
+var MarginBottomStyle = lipgloss.NewStyle().
+	MarginBottom(1).
+	Inherit(BaseStyle)
+
+var FullScreenStyle = lipgloss.NewStyle().
+	Height(terminalHeight).
 	Inherit(BaseStyle)
 
 // UpdateTerminalSize updates the terminal size used when rendering.
 func UpdateTerminalSize(w, h int) {
 	terminalWidth = w
 	terminalHeight = h
-	BaseStyle.
+	BaseStyle = BaseStyle.Width(w)
+	WrappedTextStyle = WrappedTextStyle.Width(w)
+	FullScreenStyle = FullScreenStyle.
 		Width(w).
 		Height(h)
-}
-
-// WrapText wraps the given text based on the terminal width.
-func WrapText(text string) string {
-	return wordwrap.String(text, terminalWidth)
 }

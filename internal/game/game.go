@@ -2,6 +2,7 @@ package game
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/gen"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/ui"
@@ -104,9 +105,9 @@ func (g *Game) View() string {
 
 	var view string
 	for _, uiMessage := range g.uiMessages {
-		view += uiMessage.View()
+		view = lipgloss.JoinVertical(lipgloss.Left, view, uiMessage.View())
 	}
-	return ui.BaseStyle.Render(view)
+	return ui.FullScreenStyle.Render(view)
 }
 
 // updateGameState advances the game state.

@@ -2,6 +2,7 @@ package ui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"time"
 )
 
@@ -106,21 +107,21 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Message) View() string {
 	runes := []rune(m.text)
 	visibleText := string(runes[:m.charactersRendered])
-	view := WrapText(visibleText)
+	view := visibleText
+	view = WrappedTextStyle.Render(visibleText)
+	view = BaseStyle.Render(view)
 
 	if m.responseReceived {
 		view = InactiveTextStyle.Render(view)
 		if _, ok := m.responseComponent.(Input); ok {
 			response := InactiveTextStyle.Render(m.responseComponent.View())
-			view += "\n" + response
+			view = lipgloss.JoinVertical(lipgloss.Left, view, response)
 		}
-		view += "\n\n"
-	} else {
-		if m.charactersRendered == len(m.text) {
-			response := SecondaryTextStyle.Render(m.responseComponent.View())
-			view += "\n" + response
-		}
+	} else if m.charactersRendered == len(m.text) {
+		response := WrappedTextStyle.Render(m.responseComponent.View())
+		response = SecondaryTextStyle.Render(response)
+		view = lipgloss.JoinVertical(lipgloss.Left, view, response)
 	}
 
-	return view
+	return MarginBottomStyle.Render(view)
 }
