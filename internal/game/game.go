@@ -13,6 +13,7 @@ type Game struct {
 	messageProvider   *messages.MessageProvider
 	creatureGenerator *gen.CreatureGenerator
 	currentState      gameState
+	uiBackground      ui.Background
 	uiMessages        []ui.Message
 	uiSummoningCircle ui.SummoningCircle
 	playerResponses   []string
@@ -48,7 +49,8 @@ type exitGameMsg struct{}
 
 // Init implements tea.Model by returning a tea.Cmd that updates the game state.
 func (g *Game) Init() tea.Cmd {
-	return g.updateGameState
+	g.uiBackground = ui.NewBackground()
+	return tea.Batch(g.updateGameState, g.uiBackground.Init())
 }
 
 // Update implements tea.Model by updating the model based on the given message.
@@ -61,7 +63,7 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// For all other key messages, don't return, since other components may need the key message.
 	case tea.WindowSizeMsg:
 		ui.UpdateTerminalSize(msg.Width, msg.Height)
-		return g, nil
+		// Don't return, since other components may need the window size message.
 	case addUiMessageMsg:
 		g.uiMessages = append(g.uiMessages, msg.uiMessage)
 		return g, msg.uiMessage.Init()
@@ -84,6 +86,11 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
+
+	updatedBackground, backgroundCmd := g.uiBackground.Update(msg)
+	g.uiBackground = updatedBackground.(ui.Background)
+	cmd = tea.Batch(cmd, backgroundCmd)
+
 	for i, uiMessage := range g.uiMessages {
 		updatedUiMessage, uiMessageCmd := uiMessage.Update(msg)
 		g.uiMessages[i] = updatedUiMessage.(ui.Message)
