@@ -55,7 +55,7 @@ func (c SummoningCircle) View() string {
 
 	view := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, asciiArt)
 	text := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, c.summoningMessage)
-	text = FocusedTextStyle.Copy().
+	text = FocusedTextStyle.
 		Width(terminalWidth).
 		Height(1).
 		MarginTop(1).
