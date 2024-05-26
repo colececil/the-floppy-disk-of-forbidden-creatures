@@ -106,15 +106,18 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model by returning the model as a string to be rendered.
 func (g *Game) View() string {
+	background := g.uiBackground.View()
+
+	var foreground string
 	if g.currentState == summoningState && len(g.uiMessages) == 0 {
-		return g.uiSummoningCircle.View()
+		foreground = g.uiSummoningCircle.View()
+	} else {
+		for _, uiMessage := range g.uiMessages {
+			foreground = lipgloss.JoinVertical(lipgloss.Left, foreground, uiMessage.View())
+		}
 	}
 
-	var view string
-	for _, uiMessage := range g.uiMessages {
-		view = lipgloss.JoinVertical(lipgloss.Left, view, uiMessage.View())
-	}
-	return ui.FullScreenStyle.Render(view)
+	return ui.PlaceOverlay(0, 0, foreground, background)
 }
 
 // updateGameState advances the game state.
