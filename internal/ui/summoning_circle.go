@@ -20,15 +20,15 @@ func NewSummoningCircle(summoningMessage string) SummoningCircle {
 	}
 }
 
-// animationInterval is the rate at which the message is animated.
-const animationInterval = 250 * time.Millisecond
+// summoningCircleAnimationInterval is the rate at which the message is animated.
+const summoningCircleAnimationInterval = 250 * time.Millisecond
 
 // animationMsg is a tea.Msg for playing the next animation frame.
 type animationMsg struct{}
 
 // Init implements the tea.Model interface by returning nil.
 func (c SummoningCircle) Init() tea.Cmd {
-	return tea.Tick(animationInterval, func(t time.Time) tea.Msg {
+	return tea.Tick(summoningCircleAnimationInterval, func(t time.Time) tea.Msg {
 		return animationMsg{}
 	})
 }
@@ -37,7 +37,7 @@ func (c SummoningCircle) Init() tea.Cmd {
 func (c SummoningCircle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if _, ok := msg.(animationMsg); ok {
 		c.animationFrame = (c.animationFrame + 1) % 4
-		cmd := tea.Tick(animationInterval, func(t time.Time) tea.Msg {
+		cmd := tea.Tick(summoningCircleAnimationInterval, func(t time.Time) tea.Msg {
 			return animationMsg{}
 		})
 		return c, cmd

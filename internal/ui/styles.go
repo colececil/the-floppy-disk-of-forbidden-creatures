@@ -6,7 +6,7 @@ import (
 
 const (
 	backgroundColor          = lipgloss.Color("#0F0114")
-	backgroundAnimationColor = lipgloss.Color("#1F0217")
+	backgroundAnimationColor = lipgloss.Color("#3A042B")
 	textColor                = lipgloss.Color("#FFFFFF")
 	secondaryTextColor       = lipgloss.Color("#FF2626")
 	inactiveTextColor        = lipgloss.Color("#6A4D4D")
