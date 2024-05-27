@@ -5,48 +5,35 @@ import (
 )
 
 const (
-	backgroundColor    = lipgloss.Color("#0F0114")
-	textColor          = lipgloss.Color("#FFFFFF")
-	secondaryTextColor = lipgloss.Color("#FF2626")
-	inactiveTextColor  = lipgloss.Color("#6A4D4D")
+	backgroundColor          = lipgloss.Color("#0F0114")
+	backgroundAnimationColor = lipgloss.Color("#1F0217")
+	textColor                = lipgloss.Color("#FFFFFF")
+	secondaryTextColor       = lipgloss.Color("#FF2626")
+	inactiveTextColor        = lipgloss.Color("#6A4D4D")
 )
 
 var terminalWidth, terminalHeight int
 
-var BaseStyle = lipgloss.NewStyle().
+var BackgroundStyle = lipgloss.NewStyle().
 	Background(backgroundColor).
-	Foreground(textColor).
-	Width(terminalWidth)
+	Foreground(backgroundAnimationColor)
 
-var SecondaryTextStyle = lipgloss.NewStyle().
-	Foreground(secondaryTextColor).
-	Inherit(BaseStyle)
+var PrimaryTextStyle = BackgroundStyle.Foreground(textColor)
 
-var InactiveTextStyle = lipgloss.NewStyle().
-	Foreground(inactiveTextColor).
-	Inherit(BaseStyle)
+var SecondaryTextStyle = BackgroundStyle.Foreground(secondaryTextColor)
 
-var FocusedTextStyle = lipgloss.NewStyle().
-	Bold(true).
-	Inherit(BaseStyle)
+var InactiveTextStyle = BackgroundStyle.Foreground(inactiveTextColor)
 
-var WrappedTextStyle = lipgloss.NewStyle().
-	Width(terminalWidth)
+var FocusedTextStyle = lipgloss.NewStyle().Bold(true)
 
-var MarginBottomStyle = lipgloss.NewStyle().
-	MarginBottom(1).
-	Inherit(BaseStyle)
-
-var FullScreenStyle = lipgloss.NewStyle().
-	Height(terminalHeight).
-	Inherit(BaseStyle)
+var FullScreenStyle = BackgroundStyle.
+	Width(terminalWidth).
+	Height(terminalHeight)
 
 // UpdateTerminalSize updates the terminal size used when rendering.
 func UpdateTerminalSize(w, h int) {
 	terminalWidth = w
 	terminalHeight = h
-	BaseStyle = BaseStyle.Width(w)
-	WrappedTextStyle = WrappedTextStyle.Width(w)
 	FullScreenStyle = FullScreenStyle.
 		Width(w).
 		Height(h)

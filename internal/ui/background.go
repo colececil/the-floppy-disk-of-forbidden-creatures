@@ -2,7 +2,6 @@ package ui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // Background is a UI component for displaying the background. It implements the tea.Model interface.
@@ -52,10 +51,7 @@ func (b Background) View() string {
 		}
 	}
 
-	return lipgloss.NewStyle().
-		Background(backgroundColor).
-		Foreground(inactiveTextColor).
-		Render(view)
+	return BackgroundStyle.Render(view)
 }
 
 // initializeCharacters initializes the characters of the background and returns them in a charactersUpdateMsg.

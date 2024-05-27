@@ -63,7 +63,7 @@ func (c SummoningCircle) View() string {
 	view = lipgloss.JoinVertical(lipgloss.Left, view, text)
 	view = lipgloss.PlaceVertical(terminalHeight, lipgloss.Center, view,
 		lipgloss.WithWhitespaceBackground(backgroundColor))
-	return BaseStyle.Render(view)
+	return FullScreenStyle.Render(view)
 }
 
 const asciiArt = `                 @@@@@@@@@@@                 
