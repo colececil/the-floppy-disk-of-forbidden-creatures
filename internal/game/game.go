@@ -117,7 +117,7 @@ func (g *Game) View() string {
 		}
 	}
 
-	return ui.PlaceOverlay(0, 0, foreground, background)
+	return ui.PlaceOverlay(foreground, background)
 }
 
 // updateGameState advances the game state.

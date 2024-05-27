@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-// PlaceOverlay places fg on top of bg. This function has been copied from
+// PlaceOverlay places fg on top of bg. This function has been adapted from
 // https://github.com/charmbracelet/lipgloss/pull/102/commits/a075bfc9317152e674d661a2cdfe58144306e77a, because Lip
 // Gloss does not yet support overlays.
-func PlaceOverlay(x, y int, fg, bg string) string {
+func PlaceOverlay(fg, bg string) string {
 	fgLines, fgWidth := getLines(fg)
 	bgLines, bgWidth := getLines(bg)
 	bgHeight := len(bgLines)
@@ -20,32 +20,29 @@ func PlaceOverlay(x, y int, fg, bg string) string {
 		// FIXME: return fg or bg?
 		return fg
 	}
-	// TODO: allow placement outside of the bg box?
-	x = clamp(x, 0, bgWidth-fgWidth)
-	y = clamp(y, 0, bgHeight-fgHeight)
 
 	var b strings.Builder
 	for i, bgLine := range bgLines {
 		if i > 0 {
 			b.WriteByte('\n')
 		}
-		if i < y || i >= y+fgHeight {
+
+		if i >= fgHeight {
+			b.WriteString(bgLine)
+			continue
+		}
+
+		fgLine := trimSpacesFromRight(fgLines[i])
+		trimmedFgLine := ansi.Strip(fgLine)
+		trimmedFgLine = strings.Trim(fgLine, " ")
+
+		if len(trimmedFgLine) == 0 {
 			b.WriteString(bgLine)
 			continue
 		}
 
 		pos := 0
-		if x > 0 {
-			left := ansi.Truncate(bgLine, x, "")
-			pos = ansi.StringWidth(left)
-			b.WriteString(left)
-			if pos < x {
-				b.WriteString(strings.Repeat(" ", x-pos))
-				pos = x
-			}
-		}
 
-		fgLine := fgLines[i-y]
 		b.WriteString(fgLine)
 		pos += ansi.StringWidth(fgLine)
 
@@ -60,6 +57,13 @@ func PlaceOverlay(x, y int, fg, bg string) string {
 	}
 
 	return b.String()
+}
+
+// trimSpacesFromRight trims spaces from the right, leaving ANSI codes intact.
+func trimSpacesFromRight(s string) string {
+	strippedString := ansi.Strip(s)
+	newLength := len(strings.TrimRight(strippedString, " "))
+	return ansi.Truncate(s, newLength, "")
 }
 
 // cutLeft cuts printable characters from the left. This function has been copied from
