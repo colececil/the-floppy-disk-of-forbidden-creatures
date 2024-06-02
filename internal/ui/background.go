@@ -8,12 +8,11 @@ import (
 )
 
 var availableCharacterTypes = [][]rune{
-	{'$', '?', '¿'},
-	{'ÿ', '¥'},
+	{'.', ',', '`'},
+	{'?', '¿'},
+	{'o'},
 	{'Æ', 'À', 'Á'},
-	{'f', 'F', 'ƒ'},
-	{'ò', 'Ó', 'Ø'},
-	{'.', ',', ';', '~'},
+	{'#'},
 }
 
 // Background is a UI component for displaying the background. It implements the tea.Model interface.
