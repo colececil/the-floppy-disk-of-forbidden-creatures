@@ -3,23 +3,26 @@ package ui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"math/rand/v2"
+	"strings"
 	"time"
 )
 
 var availableCharacterTypes = [][]rune{
-	{'$'},
-	{'Y'},
-	{'f'},
-	{'{'},
-	{'0'},
+	{'$', '?', '¿'},
+	{'ÿ', '¥'},
+	{'Æ', 'À', 'Á'},
+	{'f', 'F', 'ƒ'},
+	{'ò', 'Ó', 'Ø'},
+	{'.', ',', ';', '~'},
 }
 
 // Background is a UI component for displaying the background. It implements the tea.Model interface.
 type Background struct {
-	characterTypes [][]int
-	characters     string
-	currentWidth   int
-	currentHeight  int
+	characterTypes     [][]int
+	characters         [][]rune
+	currentAnimationId int
+	currentWidth       int
+	currentHeight      int
 }
 
 // NewBackground returns a new Background.
@@ -32,13 +35,18 @@ const backgroundAnimationInterval = 100 * time.Millisecond
 
 // characterTypesUpdateMsg is a tea.Msg that updates the characterTypes of the background.
 type characterTypesUpdateMsg struct {
+	animationId    int
 	characterTypes [][]int
-	characters     string
+	characters     [][]rune
 }
 
 // Init implements tea.Model by returning a tea.Cmd that initializes the characterTypes slice.
 func (b Background) Init() tea.Cmd {
-	return func() tea.Msg { return initializeCharacterTypes(terminalWidth, terminalHeight) }
+	b.currentWidth = terminalWidth
+	b.currentHeight = terminalHeight
+	return func() tea.Msg {
+		return initializeCharacterTypes(b.currentAnimationId, terminalWidth, terminalHeight)
+	}
 }
 
 // Update implements tea.Model by updating the model based on the given message.
@@ -47,20 +55,22 @@ func (b Background) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case characterTypesUpdateMsg:
-		if len(msg.characterTypes) == b.currentHeight &&
-			len(msg.characterTypes) >= 1 &&
-			len(msg.characterTypes[0]) == b.currentWidth {
-
+		if msg.animationId == b.currentAnimationId {
 			b.characterTypes = msg.characterTypes
 			b.characters = msg.characters
 			cmd = tea.Tick(backgroundAnimationInterval, func(t time.Time) tea.Msg {
-				return generateNextStep(msg.characterTypes)
+				return generateNextStep(msg.animationId, msg.characterTypes, msg.characters)
 			})
 		}
 	case tea.WindowSizeMsg:
-		b.currentWidth = msg.Width
-		b.currentHeight = msg.Height
-		cmd = func() tea.Msg { return initializeCharacterTypes(msg.Width, msg.Height) }
+		if msg.Width != b.currentWidth || msg.Height != b.currentHeight {
+			b.currentAnimationId++
+			b.currentWidth = msg.Width
+			b.currentHeight = msg.Height
+			cmd = func() tea.Msg {
+				return initializeCharacterTypes(b.currentAnimationId, msg.Width, msg.Height)
+			}
+		}
 	}
 
 	return b, cmd
@@ -68,12 +78,19 @@ func (b Background) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model by returning a string that displays the background.
 func (b Background) View() string {
-	return BackgroundStyle.Render(b.characters)
+	var stringBuilder strings.Builder
+	for i, line := range b.characters {
+		stringBuilder.WriteString(string(line))
+		if i < len(b.characters)-1 {
+			stringBuilder.WriteString("\n")
+		}
+	}
+	return BackgroundStyle.Render(stringBuilder.String())
 }
 
 // initializeCharacterTypes initializes the character types to show in the background and returns them in a
 // characterTypesUpdateMsg.
-func initializeCharacterTypes(width int, height int) tea.Msg {
+func initializeCharacterTypes(animationId, width, height int) tea.Msg {
 	characterTypes := make([][]int, height)
 	for i := range characterTypes {
 		characterTypes[i] = make([]int, width)
@@ -82,13 +99,14 @@ func initializeCharacterTypes(width int, height int) tea.Msg {
 		}
 	}
 	return characterTypesUpdateMsg{
+		animationId:    animationId,
 		characterTypes: characterTypes,
-		characters:     generateCharactersForTypes(characterTypes),
+		characters:     generateCharactersForTypes(characterTypes, nil, nil),
 	}
 }
 
 // generateNextStep generates the next step of the cellular automaton.
-func generateNextStep(characterTypes [][]int) tea.Msg {
+func generateNextStep(animationId int, characterTypes [][]int, characters [][]rune) tea.Msg {
 	nextCharacterTypes := make([][]int, len(characterTypes))
 	for i := range characterTypes {
 		nextCharacterTypes[i] = make([]int, len(characterTypes[i]))
@@ -97,8 +115,9 @@ func generateNextStep(characterTypes [][]int) tea.Msg {
 		}
 	}
 	return characterTypesUpdateMsg{
+		animationId:    animationId,
 		characterTypes: nextCharacterTypes,
-		characters:     generateCharactersForTypes(nextCharacterTypes),
+		characters:     generateCharactersForTypes(nextCharacterTypes, characterTypes, characters),
 	}
 }
 
@@ -129,15 +148,21 @@ func getNeighbors(i, j int, characterTypes [][]int) []int {
 	return neighbors
 }
 
-// generateCharactersForTypes generates a random string of characters based on the given character types.
-func generateCharactersForTypes(characterTypes [][]int) string {
-	var characters string
+// generateCharactersForTypes generates characters based on the given character types. If the character type in a given
+// cell hasn't changed since the previous step, the character in that cell remains the same. Otherwise, a random
+// character of that type is chosen.
+func generateCharactersForTypes(characterTypes [][]int, previousCharacterTypes [][]int,
+	previousCharacters [][]rune) [][]rune {
+
+	characters := make([][]rune, len(characterTypes))
 	for i, line := range characterTypes {
-		for _, characterType := range line {
-			characters += string(randomCharacterOfType(characterType))
-		}
-		if i < len(characterTypes)-1 {
-			characters += "\n"
+		characters[i] = make([]rune, len(line))
+		for j, characterType := range line {
+			if previousCharacterTypes != nil && previousCharacterTypes[i][j] == characterType {
+				characters[i][j] = previousCharacters[i][j]
+			} else {
+				characters[i][j] = randomCharacterOfType(characterType)
+			}
 		}
 	}
 	return characters
