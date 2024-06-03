@@ -48,22 +48,22 @@ func (c SummoningCircle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements the tea.Model interface by returning a string that displays the summoning circle.
 func (c SummoningCircle) View() string {
+	view := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, asciiArt)
+
 	var dots string
 	for i := 0; i < c.animationFrame; i++ {
 		dots += "."
 	}
-
-	view := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, asciiArt)
 	text := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, c.summoningMessage)
-	text = FocusedTextStyle.
-		Width(terminalWidth).
-		Height(1).
+	text = strings.TrimRight(text, " ") + dots
+	text = lipgloss.NewStyle().
+		Bold(true).
 		MarginTop(1).
-		Render(strings.TrimRight(text, " ") + dots)
+		Render(text)
+
 	view = lipgloss.JoinVertical(lipgloss.Left, view, text)
-	view = lipgloss.PlaceVertical(terminalHeight, lipgloss.Center, view,
-		lipgloss.WithWhitespaceBackground(backgroundColor))
-	return FullScreenStyle.Render(view)
+	view = PrimaryTextStyle.Render(view)
+	return CenterVertically(terminalHeight, view)
 }
 
 const asciiArt = `                 @@@@@@@@@@@                 

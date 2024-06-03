@@ -7,6 +7,22 @@ import (
 	"strings"
 )
 
+// CenterVertically centers the text vertically within the given height.
+func CenterVertically(height int, text string) string {
+	textHeight := strings.Count(text, "\n") + 1
+	if textHeight >= height {
+		return text
+	}
+
+	offset := (height - textHeight) / 2
+	var b strings.Builder
+	for i := 0; i < offset; i++ {
+		b.WriteString("\n")
+	}
+	b.WriteString(text)
+	return b.String()
+}
+
 // PlaceOverlay places fg on top of bg. This function has been adapted from
 // https://github.com/charmbracelet/lipgloss/pull/102/commits/a075bfc9317152e674d661a2cdfe58144306e77a, because Lip
 // Gloss does not yet support overlays.

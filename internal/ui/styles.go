@@ -24,8 +24,6 @@ var SecondaryTextStyle = BackgroundStyle.Foreground(secondaryTextColor)
 
 var InactiveTextStyle = BackgroundStyle.Foreground(inactiveTextColor)
 
-var FocusedTextStyle = lipgloss.NewStyle().Bold(true)
-
 var FullScreenStyle = BackgroundStyle.
 	Width(terminalWidth).
 	Height(terminalHeight)
