@@ -21,7 +21,7 @@ func NewSummoningCircle(summoningMessage string) SummoningCircle {
 }
 
 // summoningCircleAnimationInterval is the rate at which the message is animated.
-const summoningCircleAnimationInterval = 250 * time.Millisecond
+const summoningCircleAnimationInterval = 500 * time.Millisecond
 
 // animationMsg is a tea.Msg for playing the next animation frame.
 type animationMsg struct{}
@@ -36,7 +36,7 @@ func (c SummoningCircle) Init() tea.Cmd {
 // Update implements the tea.Model interface by returning nil.
 func (c SummoningCircle) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if _, ok := msg.(animationMsg); ok {
-		c.animationFrame = (c.animationFrame + 1) % 4
+		c.animationFrame = (c.animationFrame + 1) % 6
 		cmd := tea.Tick(summoningCircleAnimationInterval, func(t time.Time) tea.Msg {
 			return animationMsg{}
 		})
@@ -51,7 +51,11 @@ func (c SummoningCircle) View() string {
 	view := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, asciiArt)
 
 	var dots string
-	for i := 0; i < c.animationFrame; i++ {
+	numDots := c.animationFrame
+	if c.animationFrame > 3 {
+		numDots = 6 - c.animationFrame
+	}
+	for i := 0; i < numDots; i++ {
 		dots += "."
 	}
 	text := lipgloss.PlaceHorizontal(terminalWidth, lipgloss.Center, c.summoningMessage)
