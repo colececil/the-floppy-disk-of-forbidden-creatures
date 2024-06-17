@@ -108,7 +108,7 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Message) View() string {
 	runes := []rune(m.text)
 	visibleText := string(runes[:m.charactersRendered])
-	view := ansi.Wrap(visibleText, terminalWidth, "")
+	view := ansi.Wrap(visibleText, TerminalWidth, "")
 
 	if m.responseReceived {
 		if _, ok := m.responseComponent.(Input); ok {
@@ -116,7 +116,7 @@ func (m Message) View() string {
 		}
 		view = InactiveTextStyle.Render(view)
 	} else if m.charactersRendered == len(m.text) {
-		response := ansi.Wrap(m.responseComponent.View(), terminalWidth, "")
+		response := ansi.Wrap(m.responseComponent.View(), TerminalWidth, "")
 		response = SecondaryTextStyle.Render(response)
 		view = lipgloss.JoinVertical(lipgloss.Left, view, response)
 	}

@@ -12,7 +12,8 @@ const (
 	inactiveTextColor        = lipgloss.Color("#6A4D4D")
 )
 
-var terminalWidth, terminalHeight int
+var TerminalWidth int
+var TerminalHeight int
 
 var BackgroundStyle = lipgloss.NewStyle().
 	Background(backgroundColor).
@@ -25,13 +26,13 @@ var SecondaryTextStyle = BackgroundStyle.Foreground(secondaryTextColor)
 var InactiveTextStyle = BackgroundStyle.Foreground(inactiveTextColor)
 
 var FullScreenStyle = BackgroundStyle.
-	Width(terminalWidth).
-	Height(terminalHeight)
+	Width(TerminalWidth).
+	Height(TerminalHeight)
 
 // UpdateTerminalSize updates the terminal size used when rendering.
 func UpdateTerminalSize(w, h int) {
-	terminalWidth = w
-	terminalHeight = h
+	TerminalWidth = w
+	TerminalHeight = h
 	FullScreenStyle = FullScreenStyle.
 		Width(w).
 		Height(h)

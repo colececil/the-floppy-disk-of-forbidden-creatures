@@ -1,11 +1,14 @@
 package ui
 
 import (
-	"bytes"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/mattn/go-runewidth"
 	"strings"
+	"unicode/utf8"
 )
+
+const ansiResetStyle = "0m"
+
+var ansiControlSequenceIntroducer = string([]rune{rune(ansi.ESC), '['})
 
 // CenterVertically centers the text vertically within the given height.
 func CenterVertically(height int, text string) string {
@@ -23,128 +26,101 @@ func CenterVertically(height int, text string) string {
 	return b.String()
 }
 
-// PlaceOverlay places fg on top of bg. This function has been adapted from
-// https://github.com/charmbracelet/lipgloss/pull/102/commits/a075bfc9317152e674d661a2cdfe58144306e77a, because Lip
-// Gloss does not yet support overlays.
-func PlaceOverlay(fg, bg string) string {
-	fgLines, fgWidth := getLines(fg)
-	bgLines, bgWidth := getLines(bg)
-	bgHeight := len(bgLines)
-	fgHeight := len(fgLines)
+// PlaceOverlay places the foreground on top of the background, without messing up the ANSI styling. It does
+// this by comparing each line character-by-character. If the foreground character is a space or nonexistent, then the
+// background character is used. Otherwise, the foreground character is used. Whenever switching between foreground and
+// background characters, the ANSI styling is reset and the current styling of the layer being switched to is applied.
+func PlaceOverlay(foreground, background string) string {
+	foregroundLines := strings.Split(foreground, "\n")
+	backgroundLines := strings.Split(background, "\n")
+	width := len(backgroundLines[0])
+	height := len(backgroundLines)
 
-	if fgWidth >= bgWidth && fgHeight >= bgHeight {
-		// FIXME: return fg or bg?
-		return fg
+	var currentStyle = new(string)
+	var currentForegroundStyle = new(string)
+	var currentBackgroundStyle = new(string)
+
+	var stringBuilder strings.Builder
+
+	for lineIndex := 0; lineIndex < height; lineIndex++ {
+		if lineIndex >= len(foregroundLines) {
+			if *currentStyle != *currentBackgroundStyle {
+				stringBuilder.WriteString(resetToStyle(currentBackgroundStyle))
+			}
+			stringBuilder.WriteString(backgroundLines[lineIndex] + "\n")
+			continue
+		}
+
+		foregroundIndex := 0
+		backgroundIndex := 0
+		for charIndex := 0; charIndex < width; charIndex++ {
+			var foregroundCharacter, backgroundCharacter rune
+			foregroundCharacter, foregroundIndex =
+				getNextPrintableCharacter(foregroundLines[lineIndex], foregroundIndex, currentForegroundStyle)
+			backgroundCharacter, backgroundIndex =
+				getNextPrintableCharacter(backgroundLines[lineIndex], backgroundIndex, currentBackgroundStyle)
+
+			if foregroundCharacter != ' ' { // Write foreground character
+				if *currentStyle != *currentForegroundStyle {
+					stringBuilder.WriteString(resetToStyle(currentForegroundStyle))
+				}
+				stringBuilder.WriteString(string(foregroundCharacter))
+			} else { // Write background character
+				if *currentStyle != *currentBackgroundStyle {
+					stringBuilder.WriteString(resetToStyle(currentBackgroundStyle))
+				}
+				stringBuilder.WriteString(string(backgroundCharacter))
+			}
+
+			foregroundIndex = foregroundIndex + utf8.RuneLen(foregroundCharacter)
+			backgroundIndex = backgroundIndex + utf8.RuneLen(backgroundCharacter)
+		}
+		stringBuilder.WriteString("\n")
+	}
+	return stringBuilder.String()
+}
+
+// getNextPrintableCharacter returns the next printable character, parsing any ANSI escape sequences along the way and
+// modifying the current style as necessary. It returns the next printable character and the index of that character. If
+// the given index is out of range, it returns the space character and the given index.
+func getNextPrintableCharacter(s string, startIndex int, currentStyle *string) (rune, int) {
+	if startIndex >= len(s) {
+		return ' ', startIndex
 	}
 
+	i := startIndex
+	for strings.HasPrefix(s[i:], ansiControlSequenceIntroducer) {
+		controlSequence := ansiControlSequenceIntroducer
+		i += len(ansiControlSequenceIntroducer)
+		for {
+			nextRune, runeSize := utf8.DecodeRuneInString(s[i:])
+			controlSequence += string(nextRune)
+			i += runeSize
+			if (nextRune >= 'a' && nextRune <= 'z') || (nextRune >= 'A' && nextRune <= 'Z') {
+				if controlSequence == ansiControlSequenceIntroducer+ansiResetStyle {
+					*currentStyle = ""
+				} else {
+					*currentStyle += controlSequence
+				}
+				break
+			}
+		}
+	}
+
+	if i >= len(s) {
+		return ' ', i
+	}
+
+	nextRune, _ := utf8.DecodeRuneInString(s[i:])
+	return nextRune, i
+}
+
+// resetToStyle returns a string that resets the ANSI styling to the given style.
+func resetToStyle(style *string) string {
 	var b strings.Builder
-	for i, bgLine := range bgLines {
-		if i > 0 {
-			b.WriteByte('\n')
-		}
-
-		if i >= fgHeight {
-			b.WriteString(bgLine)
-			continue
-		}
-
-		fgLine := trimSpacesFromRight(fgLines[i])
-		trimmedFgLine := ansi.Strip(fgLine)
-		trimmedFgLine = strings.Trim(fgLine, " ")
-
-		if len(trimmedFgLine) == 0 {
-			b.WriteString(bgLine)
-			continue
-		}
-
-		pos := 0
-
-		b.WriteString(fgLine)
-		pos += ansi.StringWidth(fgLine)
-
-		right := cutLeft(bgLine, pos)
-		bgWidth := ansi.StringWidth(bgLine)
-		rightWidth := ansi.StringWidth(right)
-		if rightWidth <= bgWidth-pos {
-			b.WriteString(strings.Repeat(" ", bgWidth-rightWidth-pos))
-		}
-
-		b.WriteString(right)
-	}
-
-	return b.String()
-}
-
-// trimSpacesFromRight trims spaces from the right, leaving ANSI codes intact.
-func trimSpacesFromRight(s string) string {
-	strippedString := ansi.Strip(s)
-	newLength := len(strings.TrimRight(strippedString, " "))
-	return ansi.Truncate(s, newLength, "")
-}
-
-// cutLeft cuts printable characters from the left. This function has been copied from
-// https://github.com/charmbracelet/lipgloss/pull/102/commits/a075bfc9317152e674d661a2cdfe58144306e77a.
-func cutLeft(s string, cutWidth int) string {
-	var (
-		pos    int
-		isAnsi bool
-		ab     bytes.Buffer
-		b      bytes.Buffer
-	)
-	for _, c := range s {
-		var w int
-		if c == ansi.ESC || isAnsi {
-			isAnsi = true
-			ab.WriteRune(c)
-			if IsTerminator(c) {
-				isAnsi = false
-				if bytes.HasSuffix(ab.Bytes(), []byte("[0m")) {
-					ab.Reset()
-				}
-			}
-		} else {
-			w = runewidth.RuneWidth(c)
-		}
-
-		if pos >= cutWidth {
-			if b.Len() == 0 {
-				if ab.Len() > 0 {
-					b.Write(ab.Bytes())
-				}
-				if pos-cutWidth > 1 {
-					b.WriteByte(' ')
-					continue
-				}
-			}
-			b.WriteRune(c)
-		}
-		pos += w
+	b.WriteString(ansiControlSequenceIntroducer + ansiResetStyle)
+	if style != nil {
+		b.WriteString(*style)
 	}
 	return b.String()
-}
-
-// This function has been copied from
-// https://github.com/charmbracelet/lipgloss/pull/102/commits/a075bfc9317152e674d661a2cdfe58144306e77a.
-func clamp(v, lower, upper int) int {
-	return min(max(v, lower), upper)
-}
-
-// Split a string into lines, additionally returning the size of the widest line. This function has been copied from
-// Lip Gloss.
-func getLines(s string) (lines []string, widest int) {
-	lines = strings.Split(s, "\n")
-
-	for _, l := range lines {
-		w := ansi.StringWidth(l)
-		if widest < w {
-			widest = w
-		}
-	}
-
-	return lines, widest
-}
-
-// IsTerminator checks if the given rune is a terminator. This function has been copied from muesli/reflow.
-func IsTerminator(c rune) bool {
-	return (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)
 }

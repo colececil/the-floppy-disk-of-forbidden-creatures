@@ -1,9 +1,11 @@
 package game
 
 import (
+	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/gen"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/log"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/ui"
 )
@@ -62,6 +64,8 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// For all other key messages, don't return, since other components may need the key message.
 	case tea.WindowSizeMsg:
+		log.Logger.Print(fmt.Sprintf("func=\"game.Game.Update\", msg=\"Window size updated.\", width=\"%d\", "+
+			"height=\"%d\"", msg.Width, msg.Height))
 		ui.UpdateTerminalSize(msg.Width, msg.Height)
 		// Don't return, since other components may need the window size message.
 	case addUiMessageMsg:

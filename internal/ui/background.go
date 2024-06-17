@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/log"
 	"math/rand/v2"
 	"strings"
 	"time"
@@ -41,10 +43,10 @@ type characterTypesUpdateMsg struct {
 
 // Init implements tea.Model by returning a tea.Cmd that initializes the characterTypes slice.
 func (b Background) Init() tea.Cmd {
-	b.currentWidth = terminalWidth
-	b.currentHeight = terminalHeight
+	b.currentWidth = TerminalWidth
+	b.currentHeight = TerminalHeight
 	return func() tea.Msg {
-		return initializeCharacterTypes(b.currentAnimationId, terminalWidth, terminalHeight)
+		return initializeCharacterTypes(b.currentAnimationId, TerminalWidth, TerminalHeight)
 	}
 }
 
@@ -63,6 +65,8 @@ func (b Background) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		if msg.Width != b.currentWidth || msg.Height != b.currentHeight {
+			log.Logger.Print(fmt.Sprintf("func=\"ui.Background.Update\", msg=\"Window size updated.\", width=\"%d\", "+
+				"height=\"%d\"", msg.Width, msg.Height))
 			b.currentAnimationId++
 			b.currentWidth = msg.Width
 			b.currentHeight = msg.Height
@@ -90,6 +94,9 @@ func (b Background) View() string {
 // initializeCharacterTypes initializes the character types to show in the background and returns them in a
 // characterTypesUpdateMsg.
 func initializeCharacterTypes(animationId, width, height int) tea.Msg {
+	log.Logger.Print(fmt.Sprintf("func=\"ui.Background.initializeCharacterTypes\", msg=\"Function called.\", "+
+		"animationId=\"%d\", width=\"%d\", height=\"%d\"", animationId, width, height))
+
 	characterTypes := make([][]int, height)
 	for i := range characterTypes {
 		characterTypes[i] = make([]int, width)
