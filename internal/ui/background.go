@@ -88,7 +88,7 @@ func (b Background) View() string {
 			stringBuilder.WriteString("\n")
 		}
 	}
-	return BackgroundStyle.Render(stringBuilder.String())
+	return stringBuilder.String()
 }
 
 // initializeCharacterTypes initializes the character types to show in the background and returns them in a
