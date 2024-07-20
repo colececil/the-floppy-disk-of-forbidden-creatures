@@ -71,24 +71,24 @@ func PlaceOverlay(foreground, background string) string {
 // overlaySingleLine constructs a single line of the overlay.
 func overlaySingleLine(backgroundLine string, foregroundLine string, currentForegroundStyle *string) string {
 	if len(foregroundLine) == 0 {
-		return ansiResetStyle + ansiBackgroundStyle + backgroundLine
+		return textWithStyle(backgroundLine, ansiBackgroundStyle)
 	}
 
 	foregroundChunkSeparators := ansiAndWhitespaceRegex.FindAllStringIndex(foregroundLine, -1)
 
 	if foregroundChunkSeparators == nil || len(foregroundChunkSeparators) == 0 {
 		// The foreground has no ANSI control sequences or whitespace, so just write it to the output.
-		return ansiResetStyle + *currentForegroundStyle + foregroundLine
+		return textWithStyle(foregroundLine, *currentForegroundStyle)
 	} else {
 		var stringBuilder strings.Builder
 		currentRuneIndex := new(int)
 
-		// If the foreground's first separator is not at the start of the line, we need to write some of the background
+		// If the foreground's first separator is not at the start of the line, we need to write some of the foreground
 		// at the start of the line.
 		firstSeparatorStartIndex := foregroundChunkSeparators[0][0]
 		if firstSeparatorStartIndex > 0 {
-			stringBuilder.WriteString(ansiResetStyle + *currentForegroundStyle +
-				foregroundLine[0:firstSeparatorStartIndex])
+			styledText := textWithStyle(foregroundLine[0:firstSeparatorStartIndex], *currentForegroundStyle)
+			stringBuilder.WriteString(styledText)
 			*currentRuneIndex = utf8.RuneCountInString(foregroundLine[0:firstSeparatorStartIndex])
 		}
 
@@ -113,7 +113,8 @@ func overlaySingleLine(backgroundLine string, foregroundLine string, currentFore
 		// If we are not at the end of the line, we need to write some of the background at the end of the line.
 		remainingBackgroundRunes := []rune(backgroundLine)[*currentRuneIndex:]
 		if len(remainingBackgroundRunes) > 0 {
-			stringBuilder.WriteString(ansiResetStyle + ansiBackgroundStyle + string(remainingBackgroundRunes))
+			styledText := textWithStyle(string(remainingBackgroundRunes), ansiBackgroundStyle)
+			stringBuilder.WriteString(styledText)
 		}
 
 		return stringBuilder.String()
@@ -140,6 +141,11 @@ func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentFore
 
 	*currentRuneIndex += spacesInSeparator + utf8.RuneCountInString(chunk)
 
-	return ansiResetStyle + ansiBackgroundStyle + string(backgroundRunesToWrite) +
-		ansiResetStyle + *currentForegroundStyle + chunk
+	return textWithStyle(string(backgroundRunesToWrite), ansiBackgroundStyle) +
+		textWithStyle(chunk, *currentForegroundStyle)
+}
+
+// textWithStyle returns a string with the given text and style.
+func textWithStyle(text, style string) string {
+	return ansiResetStyle + style + text
 }
