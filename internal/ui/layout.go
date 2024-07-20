@@ -37,13 +37,15 @@ func CenterVertically(height int, text string) string {
 // Note: This function assumes there is no ANSI styling in the given background string. It applies a hard coded style to
 // the background as the output is written.
 func PlaceOverlay(foreground, background string) string {
-	if len(background) == 0 {
-		log.Logger.Println("func=\"ui.PlaceOverlay\", msg=\"Background string is empty. Returning empty string.\"")
-		return ""
-	}
-
 	foregroundLines := strings.Split(foreground, "\n")
 	backgroundLines := strings.Split(background, "\n")
+
+	if ansi.StringWidth(backgroundLines[0]) != TerminalWidth || len(backgroundLines) != TerminalHeight {
+		log.Logger.Printf("func=\"ui.PlaceOverlay\", msg=\"Background dimensions do not match terminal dimensions.\", "+
+			"backgroundWidth=\"%d\", backgroundHeight=\"%d\", terminalWidth=\"%d\", terminalHeight=\"%d\"",
+			len(backgroundLines[0]), len(backgroundLines), TerminalWidth, TerminalHeight)
+		return ""
+	}
 
 	var currentForegroundStyle = new(string)
 	var stringBuilder strings.Builder
