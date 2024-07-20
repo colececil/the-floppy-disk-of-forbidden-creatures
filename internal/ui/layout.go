@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/charmbracelet/x/ansi"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/log"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -36,6 +37,11 @@ func CenterVertically(height int, text string) string {
 // Note: This function assumes there is no ANSI styling in the given background string. It applies a hard coded style to
 // the background as the output is written.
 func PlaceOverlay(foreground, background string) string {
+	if len(background) == 0 {
+		log.Logger.Println("func=\"ui.PlaceOverlay\", msg=\"Background string is empty. Returning empty string.\"")
+		return ""
+	}
+
 	foregroundLines := strings.Split(foreground, "\n")
 	backgroundLines := strings.Split(background, "\n")
 
