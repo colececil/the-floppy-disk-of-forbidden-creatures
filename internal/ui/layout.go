@@ -136,7 +136,7 @@ func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentFore
 			currentForegroundStyle = new(string)
 			ansiControlSequence = ansiControlSequence[len(ansiResetStyle):]
 		}
-		strings.ReplaceAll(*currentForegroundStyle, ansiControlSequence, "")
+		*currentForegroundStyle = strings.ReplaceAll(*currentForegroundStyle, ansiControlSequence, "")
 		*currentForegroundStyle += ansiControlSequence
 	}
 
