@@ -4,7 +4,9 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/log"
 	"regexp"
+	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -149,4 +151,21 @@ func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentFore
 // textWithStyle returns a string with the given text and style.
 func textWithStyle(text, style string) string {
 	return ansiResetStyle + style + text
+}
+
+// printInvisibleCharacters prints the given text, showing invisible characters as unicode escape sequences. This is
+// useful for debugging.
+func printInvisibleCharacters(text string) string {
+	inputRunes := []rune(text)
+	outputRunes := make([]rune, 0)
+	for i := 0; i < len(inputRunes); i++ {
+		if unicode.IsGraphic(inputRunes[i]) {
+			outputRunes = append(outputRunes, inputRunes[i])
+		} else {
+			outputRunes = append(outputRunes, '\\', 'u')
+			codePoint := []rune(strconv.Itoa(int(inputRunes[i])))
+			outputRunes = append(outputRunes, codePoint...)
+		}
+	}
+	return string(outputRunes)
 }
