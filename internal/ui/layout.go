@@ -57,6 +57,7 @@ func PlaceOverlay(foreground, background string, transparentSingleSpaces bool) s
 	}
 
 	var currentForegroundStyle = new(string)
+	var lastUsedStyle = new(string)
 	var stringBuilder strings.Builder
 
 	foregroundChunkSeparatorRegex := ansiOrDoubleSpaceRegex
@@ -71,7 +72,7 @@ func PlaceOverlay(foreground, background string, transparentSingleSpaces bool) s
 			foregroundLine = foregroundLines[lineIndex]
 		}
 
-		outputLine := overlaySingleLine(backgroundLine, foregroundLine, currentForegroundStyle,
+		outputLine := overlaySingleLine(backgroundLine, foregroundLine, currentForegroundStyle, lastUsedStyle,
 			foregroundChunkSeparatorRegex)
 		stringBuilder.WriteString(outputLine)
 
@@ -84,18 +85,18 @@ func PlaceOverlay(foreground, background string, transparentSingleSpaces bool) s
 }
 
 // overlaySingleLine constructs a single line of the overlay.
-func overlaySingleLine(backgroundLine string, foregroundLine string, currentForegroundStyle *string,
+func overlaySingleLine(backgroundLine string, foregroundLine string, currentForegroundStyle, lastUsedStyle *string,
 	foregroundChunkSeparatorRegex *regexp.Regexp) string {
 
 	if len(foregroundLine) == 0 {
-		return textWithStyle(backgroundLine, ansiBackgroundStyle)
+		return textWithStyle(backgroundLine, ansiBackgroundStyle, lastUsedStyle)
 	}
 
 	foregroundChunkSeparators := foregroundChunkSeparatorRegex.FindAllStringIndex(foregroundLine, -1)
 
 	if foregroundChunkSeparators == nil || len(foregroundChunkSeparators) == 0 {
 		// The foreground has no ANSI control sequences or whitespace, so just write it to the output.
-		return textWithStyle(foregroundLine, *currentForegroundStyle)
+		return textWithStyle(foregroundLine, *currentForegroundStyle, lastUsedStyle)
 	} else {
 		var stringBuilder strings.Builder
 		currentRuneIndex := new(int)
@@ -104,7 +105,8 @@ func overlaySingleLine(backgroundLine string, foregroundLine string, currentFore
 		// at the start of the line.
 		firstSeparatorStartIndex := foregroundChunkSeparators[0][0]
 		if firstSeparatorStartIndex > 0 {
-			styledText := textWithStyle(foregroundLine[0:firstSeparatorStartIndex], *currentForegroundStyle)
+			styledText := textWithStyle(foregroundLine[0:firstSeparatorStartIndex], *currentForegroundStyle,
+				lastUsedStyle)
 			stringBuilder.WriteString(styledText)
 			*currentRuneIndex = utf8.RuneCountInString(foregroundLine[0:firstSeparatorStartIndex])
 		}
@@ -122,6 +124,7 @@ func overlaySingleLine(backgroundLine string, foregroundLine string, currentFore
 				foregroundLine[separatorEndIndex:chunkEndIndex],
 				backgroundLine,
 				currentForegroundStyle,
+				lastUsedStyle,
 				currentRuneIndex,
 			)
 			stringBuilder.WriteString(outputChunk)
@@ -130,7 +133,7 @@ func overlaySingleLine(backgroundLine string, foregroundLine string, currentFore
 		// If we are not at the end of the line, we need to write some of the background at the end of the line.
 		remainingBackgroundRunes := []rune(backgroundLine)[*currentRuneIndex:]
 		if len(remainingBackgroundRunes) > 0 {
-			styledText := textWithStyle(string(remainingBackgroundRunes), ansiBackgroundStyle)
+			styledText := textWithStyle(string(remainingBackgroundRunes), ansiBackgroundStyle, lastUsedStyle)
 			stringBuilder.WriteString(styledText)
 		}
 
@@ -139,7 +142,7 @@ func overlaySingleLine(backgroundLine string, foregroundLine string, currentFore
 }
 
 // overlaySingleLineChunk constructs a single chunk of a single line of the overlay.
-func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentForegroundStyle *string,
+func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentForegroundStyle, lastUsedStyle *string,
 	currentRuneIndex *int) string {
 
 	// If the separator contains spaces, each space needs to be replaced with the corresponding background character.
@@ -159,12 +162,17 @@ func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentFore
 
 	*currentRuneIndex += spacesInSeparator + utf8.RuneCountInString(chunk)
 
-	return textWithStyle(string(backgroundRunesToWrite), ansiBackgroundStyle) +
-		textWithStyle(chunk, *currentForegroundStyle)
+	return textWithStyle(string(backgroundRunesToWrite), ansiBackgroundStyle, lastUsedStyle) +
+		textWithStyle(chunk, *currentForegroundStyle, lastUsedStyle)
 }
 
 // textWithStyle returns a string with the given text and style.
-func textWithStyle(text, style string) string {
+func textWithStyle(text, style string, lastUsedStyle *string) string {
+	if *lastUsedStyle == style {
+		return text
+	}
+
+	*lastUsedStyle = style
 	return ansiResetStyle + style + text
 }
 
