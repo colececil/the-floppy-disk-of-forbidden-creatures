@@ -113,15 +113,17 @@ func (g *Game) View() string {
 	background := g.uiBackground.View()
 
 	var foreground string
+	var transparentSingleSpacesInOverlay bool
 	if g.currentState == summoningState && len(g.uiMessages) == 0 {
 		foreground = g.uiSummoningCircle.View()
+		transparentSingleSpacesInOverlay = true
 	} else {
 		for _, uiMessage := range g.uiMessages {
 			foreground = lipgloss.JoinVertical(lipgloss.Left, foreground, uiMessage.View())
 		}
 	}
 
-	return ui.PlaceOverlay(foreground, background)
+	return ui.PlaceOverlay(foreground, background, transparentSingleSpacesInOverlay)
 }
 
 // updateGameState advances the game state.

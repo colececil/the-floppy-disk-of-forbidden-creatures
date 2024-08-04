@@ -14,7 +14,11 @@ var ansiControlSequenceIntroducer = string([]rune{rune(ansi.ESC), '['})
 var ansiResetStyle = ansiControlSequenceIntroducer + "0m"
 var ansiBackgroundStyle, _ = strings.CutSuffix(BackgroundStyle.Render(), ansiResetStyle)
 
-var ansiAndWhitespaceRegex, _ = regexp.Compile("\\s*(" + string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d*[a-zA-Z]|\\s+)\\s*")
+// ansiOrSingleSpaceRegex matches an ANSI control sequence or a space, along with any surrounding whitespace.
+var ansiOrSingleSpaceRegex, _ = regexp.Compile("\\s*(" + string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d*[a-zA-Z]|\\s)\\s*")
+
+// ansiOrDoubleSpaceRegex matches an ANSI control sequence or two spaces, along with any surrounding whitespace.
+var ansiOrDoubleSpaceRegex, _ = regexp.Compile("\\s*(" + string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d*[a-zA-Z]|\\s{2})\\s*")
 
 // CenterVertically centers the text vertically within the given height.
 func CenterVertically(height int, text string) string {
@@ -32,13 +36,16 @@ func CenterVertically(height int, text string) string {
 	return b.String()
 }
 
-// PlaceOverlay places the foreground on top of the background, without messing up the ANSI styling. If any given
-// foreground character is a space or nonexistent, then the corresponding background character is used in that location.
-// Otherwise, the foreground character is used.
+// PlaceOverlay places the given foreground on top of the given background, without messing up the ANSI styling. If any
+// given foreground character is a space or nonexistent, then the corresponding background character is used in that
+// location. Otherwise, the foreground character is used.
+//
+// The transparentSingleSpaces flag is used to indicate that single spaces in the foreground should be transparent. If
+// this is set to false, then only two or more consecutive spaces in the foreground are considered transparent.
 //
 // Note: This function assumes there is no ANSI styling in the given background string. It applies a hard coded style to
 // the background as the output is written.
-func PlaceOverlay(foreground, background string) string {
+func PlaceOverlay(foreground, background string, transparentSingleSpaces bool) string {
 	foregroundLines := strings.Split(foreground, "\n")
 	backgroundLines := strings.Split(background, "\n")
 
@@ -52,6 +59,11 @@ func PlaceOverlay(foreground, background string) string {
 	var currentForegroundStyle = new(string)
 	var stringBuilder strings.Builder
 
+	foregroundChunkSeparatorRegex := ansiOrDoubleSpaceRegex
+	if transparentSingleSpaces {
+		foregroundChunkSeparatorRegex = ansiOrSingleSpaceRegex
+	}
+
 	for lineIndex := 0; lineIndex < len(backgroundLines); lineIndex++ {
 		var backgroundLine, foregroundLine string
 		backgroundLine = backgroundLines[lineIndex]
@@ -59,7 +71,8 @@ func PlaceOverlay(foreground, background string) string {
 			foregroundLine = foregroundLines[lineIndex]
 		}
 
-		outputLine := overlaySingleLine(backgroundLine, foregroundLine, currentForegroundStyle)
+		outputLine := overlaySingleLine(backgroundLine, foregroundLine, currentForegroundStyle,
+			foregroundChunkSeparatorRegex)
 		stringBuilder.WriteString(outputLine)
 
 		if lineIndex < len(backgroundLines)-1 {
@@ -71,12 +84,14 @@ func PlaceOverlay(foreground, background string) string {
 }
 
 // overlaySingleLine constructs a single line of the overlay.
-func overlaySingleLine(backgroundLine string, foregroundLine string, currentForegroundStyle *string) string {
+func overlaySingleLine(backgroundLine string, foregroundLine string, currentForegroundStyle *string,
+	foregroundChunkSeparatorRegex *regexp.Regexp) string {
+
 	if len(foregroundLine) == 0 {
 		return textWithStyle(backgroundLine, ansiBackgroundStyle)
 	}
 
-	foregroundChunkSeparators := ansiAndWhitespaceRegex.FindAllStringIndex(foregroundLine, -1)
+	foregroundChunkSeparators := foregroundChunkSeparatorRegex.FindAllStringIndex(foregroundLine, -1)
 
 	if foregroundChunkSeparators == nil || len(foregroundChunkSeparators) == 0 {
 		// The foreground has no ANSI control sequences or whitespace, so just write it to the output.
