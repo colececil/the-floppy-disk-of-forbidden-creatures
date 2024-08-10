@@ -14,11 +14,16 @@ var ansiControlSequenceIntroducer = string([]rune{rune(ansi.ESC), '['})
 var ansiResetStyle = ansiControlSequenceIntroducer + "0m"
 var ansiBackgroundStyle, _ = strings.CutSuffix(BackgroundStyle.Render(), ansiResetStyle)
 
-// ansiOrSingleSpaceRegex matches an ANSI control sequence or a space, along with any surrounding whitespace.
-var ansiOrSingleSpaceRegex, _ = regexp.Compile("\\s*(" + string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d*[a-zA-Z]|\\s)\\s*")
+// ansiOrSingleSpaceRegex matches a single ANSI control sequence.
+var singleAnsiRegex, _ = regexp.Compile(string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d*[a-zA-Z]")
 
-// ansiOrDoubleSpaceRegex matches an ANSI control sequence or two spaces, along with any surrounding whitespace.
-var ansiOrDoubleSpaceRegex, _ = regexp.Compile("\\s*(" + string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d*[a-zA-Z]|\\s{2})\\s*")
+// ansiOrSingleSpaceRegex matches either 1) a series of one or more ANSI control sequences, or 2) a space. The match
+// also includes any surrounding whitespace.
+var ansiOrSingleSpaceRegex, _ = regexp.Compile("\\s*((" + singleAnsiRegex.String() + ")+|\\s)+\\s*")
+
+// ansiOrSingleSpaceRegex matches either 1) a series of one or more ANSI control sequences, or 2) two spaces. The match
+// also includes any surrounding whitespace.
+var ansiOrDoubleSpaceRegex, _ = regexp.Compile("\\s*((" + singleAnsiRegex.String() + ")+|\\s{2})\\s*")
 
 // CenterVertically centers the text vertically within the given height.
 func CenterVertically(height int, text string) string {
@@ -149,15 +154,21 @@ func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentFore
 	spacesInSeparator := strings.Count(separator, " ")
 	backgroundRunesToWrite := []rune(backgroundLine)[*currentRuneIndex : *currentRuneIndex+spacesInSeparator]
 
-	// Update the current foreground style if the separator contains an ANSI control sequence.
-	ansiControlSequence := strings.TrimSpace(separator)
-	if len(ansiControlSequence) > 0 {
-		if strings.HasPrefix(ansiControlSequence, ansiResetStyle) {
+	// Update the current foreground style if the separator contains a series of one or more ANSI control sequences.
+	ansiText := strings.TrimSpace(separator)
+	if len(ansiText) > 0 {
+		if strings.HasPrefix(ansiText, ansiResetStyle) {
 			currentForegroundStyle = new(string)
-			ansiControlSequence = ansiControlSequence[len(ansiResetStyle):]
+			ansiText = ansiText[len(ansiResetStyle):]
 		}
-		*currentForegroundStyle = strings.ReplaceAll(*currentForegroundStyle, ansiControlSequence, "")
-		*currentForegroundStyle += ansiControlSequence
+		ansiControlSequences := singleAnsiRegex.FindAllString(ansiText, -1)
+		if ansiControlSequences != nil {
+			// Remove any ANSI control sequence that is already in the current foreground style, to avoid duplicates.
+			for _, ansiControlSequence := range ansiControlSequences {
+				*currentForegroundStyle = strings.ReplaceAll(*currentForegroundStyle, ansiControlSequence, "")
+			}
+		}
+		*currentForegroundStyle += ansiText
 	}
 
 	*currentRuneIndex += spacesInSeparator + utf8.RuneCountInString(chunk)
