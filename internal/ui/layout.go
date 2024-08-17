@@ -19,7 +19,7 @@ var singleAnsiRegex, _ = regexp.Compile(string(rune(ansi.ESC)) + "\\[(\\d+;)*\\d
 
 // ansiOrSingleSpaceRegex matches either 1) a series of one or more ANSI control sequences, or 2) a space. The match
 // also includes any surrounding whitespace.
-var ansiOrSingleSpaceRegex, _ = regexp.Compile("\\s*((" + singleAnsiRegex.String() + ")+|\\s)+\\s*")
+var ansiOrSingleSpaceRegex, _ = regexp.Compile("\\s*((" + singleAnsiRegex.String() + ")+|\\s)\\s*")
 
 // ansiOrSingleSpaceRegex matches either 1) a series of one or more ANSI control sequences, or 2) two spaces. The match
 // also includes any surrounding whitespace.
