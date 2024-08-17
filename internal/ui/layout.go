@@ -12,6 +12,7 @@ import (
 
 var ansiControlSequenceIntroducer = string([]rune{rune(ansi.ESC), '['})
 var ansiResetStyle = ansiControlSequenceIntroducer + "0m"
+var ansiInverse = ansiControlSequenceIntroducer + "7m"
 var ansiBackgroundStyle, _ = strings.CutSuffix(BackgroundStyle.Render(), ansiResetStyle)
 
 // ansiOrSingleSpaceRegex matches a single ANSI control sequence.
@@ -149,6 +150,13 @@ func overlaySingleLine(backgroundLine string, foregroundLine string, currentFore
 // overlaySingleLineChunk constructs a single chunk of a single line of the overlay.
 func overlaySingleLineChunk(separator, chunk, backgroundLine string, currentForegroundStyle, lastUsedStyle *string,
 	currentRuneIndex *int) string {
+
+	// Don't replace a single space with the background character if it's intended to be displayed with an inverse
+	// style.
+	if strings.Contains(separator, ansiInverse+" ") {
+		separator = strings.ReplaceAll(separator, ansiInverse+" ", ansiInverse)
+		chunk = " " + chunk
+	}
 
 	// If the separator contains spaces, each space needs to be replaced with the corresponding background character.
 	spacesInSeparator := strings.Count(separator, " ")
