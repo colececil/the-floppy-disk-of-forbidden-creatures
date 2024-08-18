@@ -33,17 +33,20 @@ func (i Input) Init() tea.Cmd {
 
 // Update implements tea.Model by calling Update on the backing text input.
 func (i Input) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	if msg, ok := msg.(InputSetEnabledMsg); ok && msg.Id == i.id {
 		if msg.Enabled {
-			i.backingInput.Focus()
+			cmd = i.backingInput.Focus()
 		} else {
 			i.backingInput.Blur()
 		}
-		return i, nil
 	}
 
-	var cmd tea.Cmd
-	i.backingInput, cmd = i.backingInput.Update(msg)
+	var updateCmd tea.Cmd
+	i.backingInput, updateCmd = i.backingInput.Update(msg)
+	cmd = tea.Batch(cmd, updateCmd)
+
 	return i, cmd
 }
 
