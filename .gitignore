@@ -25,3 +25,5 @@ go.work
 .env
 bin/
 *.log
+*.aup3-wal
+*.aup3-shm

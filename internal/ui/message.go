@@ -4,24 +4,28 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/audio"
+	"math/rand/v2"
 	"time"
 )
 
 // Message is a UI component that displays a message to the player. It implements tea.Model.
 type Message struct {
-	id                 int
-	text               string
-	responseComponent  tea.Model
-	responseReceived   bool
-	charactersRendered int
+	id                       int
+	text                     string
+	responseComponent        tea.Model
+	responseReceived         bool
+	charactersRendered       int
+	useBuzzForScrollingSound bool
 }
 
 // NewMessage creates a new Message.
 func NewMessage(id int, text string, responseComponent tea.Model) Message {
 	return Message{
-		id:                id,
-		text:              text,
-		responseComponent: responseComponent,
+		id:                       id,
+		text:                     text,
+		responseComponent:        responseComponent,
+		useBuzzForScrollingSound: rand.IntN(2) == 0,
 	}
 }
 
@@ -52,6 +56,8 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case nextCharMsg:
 		if msg.id == m.id {
 			m.charactersRendered = min(m.charactersRendered+1, len(m.text))
+			m.playScrollingSoundEffect()
+
 			var cmd tea.Cmd
 			if m.charactersRendered < len(m.text) {
 				// Not all characters have been rendered yet, so schedule another tick.
@@ -59,6 +65,12 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return nextCharMsg{id: m.id}
 				})
 			} else {
+				if m.useBuzzForScrollingSound {
+					audio.ResetLastSegmentPlayed(audio.DoubleBuzzSoundEffect)
+				} else {
+					audio.ResetLastSegmentPlayed(audio.RhythmicClicksAndBuzzesSoundEffect)
+				}
+
 				// The message has been fully rendered, so if the response component is an input component, allow it to
 				// begin receiving input.
 				if _, ok := m.responseComponent.(Input); ok {
@@ -90,6 +102,7 @@ func (m Message) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			m.responseReceived = true
+			_ = audio.Play(getRandomBeepSoundEffect(), nil, false)
 
 			cmd = tea.Batch(
 				cmd,
@@ -124,4 +137,34 @@ func (m Message) View() string {
 	return PrimaryTextStyle.
 		MarginBottom(1).
 		Render(view)
+}
+
+// playScrollingSoundEffect plays the scrolling sound effect.
+func (m Message) playScrollingSoundEffect() {
+	if m.useBuzzForScrollingSound {
+		audioSegmentIndex := getNextAudioSegmentIndexForScrolling(audio.DoubleBuzzSoundEffect, 2)
+		_ = audio.Play(audio.DoubleBuzzSoundEffect, &audioSegmentIndex, false)
+	} else {
+		audioSegmentIndex := getNextAudioSegmentIndexForScrolling(audio.RhythmicClicksAndBuzzesSoundEffect, 8)
+		_ = audio.Play(audio.RhythmicClicksAndBuzzesSoundEffect, &audioSegmentIndex, false)
+	}
+}
+
+// getNextAudioSegmentIndexForScrolling returns the index of the next audio segment to play for the scrolling effect.
+func getNextAudioSegmentIndexForScrolling(filename audio.SoundEffectFilename, numSegments int) int {
+	lastIndex := audio.LastSegmentPlayed(filename)
+	if lastIndex == -1 {
+		return 1
+	}
+	return (lastIndex % numSegments) + 1
+}
+
+// getRandomBeepSoundEffect returns a random beep sound effect by its filename.
+func getRandomBeepSoundEffect() audio.SoundEffectFilename {
+	availableSoundEffects := []audio.SoundEffectFilename{
+		audio.HighPitchedBeepSoundEffect,
+		audio.LongLowPitchedBeepSoundEffect,
+		audio.ShortLowPitchedBeepSoundEffect,
+	}
+	return availableSoundEffects[rand.IntN(len(availableSoundEffects))]
 }

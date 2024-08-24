@@ -19,6 +19,7 @@ build: clean
 	@GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags '-X main.apiKey=${OPENAI_API_KEY}' -o bin/$(OS)-$(ARCH)/summon cmd/summon/summon.go
 	@echo $(README) > bin/$(OS)-$(ARCH)/README.txt
 	@echo $(EULA) > bin/$(OS)-$(ARCH)/EULA.txt
+	@cp -r assets bin/$(OS)-$(ARCH)
 
 clean:
 	@echo "Cleaning $(OS)-$(ARCH) version..."

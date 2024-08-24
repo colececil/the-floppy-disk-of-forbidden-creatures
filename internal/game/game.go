@@ -1,13 +1,16 @@
 package game
 
 import (
+	"context"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/audio"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/gen"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/log"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/ui"
+	"time"
 )
 
 // Game executes the game logic. It implements tea.Model.
@@ -82,7 +85,7 @@ func (g *Game) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		cmd := tea.Batch(
 			g.uiSummoningCircle.Init(),
-			g.generateCreatureDescription,
+			g.performSummoning,
 		)
 		return g, cmd
 	case exitGameMsg:
@@ -156,9 +159,24 @@ func (g *Game) updateGameState() tea.Msg {
 	return nil
 }
 
-// generateCreatureDescription generates a description of the creature being summoned.
-func (g *Game) generateCreatureDescription() tea.Msg {
-	description := g.creatureGenerator.GenerateDescription(g.playerResponses)
+// performSummoning performs the summoning logic and generates the creature description.
+func (g *Game) performSummoning() tea.Msg {
+	var description string
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		description = g.creatureGenerator.GenerateDescription(ctx, g.playerResponses)
+	}()
+
+	_ = audio.Play(audio.DialupModemSoundEffect, nil, false)
+	time.Sleep(26 * time.Second)
+
+	cancel()
+	if len(description) == 0 {
+		description = g.messageProvider.GetMessage(messages.SummoningErrorMessage)
+	}
+
 	return g.addNewUiMessage(description)
 }
 

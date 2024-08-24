@@ -5,7 +5,6 @@ import (
 	"github.com/colececil/the-floppy-disk-of-forbidden-creatures/internal/messages"
 	"github.com/sashabaranov/go-openai"
 	"strings"
-	"time"
 )
 
 // CreatureGenerator generates creature descriptions and images.
@@ -23,7 +22,7 @@ func NewCreatureGenerator(messageProvider *messages.MessageProvider, apiKey stri
 }
 
 // GenerateDescription generates a description of the creature being summoned, based on the given attributes.
-func (g *CreatureGenerator) GenerateDescription(creatureAttributes []string) string {
+func (g *CreatureGenerator) GenerateDescription(ctx context.Context, creatureAttributes []string) string {
 	var creatureAttributesList string
 	for i, creatureAttribute := range creatureAttributes {
 		creatureAttributesList += strings.ReplaceAll(creatureAttribute, ",", " ")
@@ -32,8 +31,6 @@ func (g *CreatureGenerator) GenerateDescription(creatureAttributes []string) str
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
 	request := openai.ChatCompletionRequest{
 		Model: openai.GPT3Dot5Turbo,
 		Messages: []openai.ChatCompletionMessage{
@@ -46,7 +43,7 @@ func (g *CreatureGenerator) GenerateDescription(creatureAttributes []string) str
 
 	response, err := g.openAiClient.CreateChatCompletion(ctx, request)
 	if err != nil {
-		return g.messageProvider.GetMessage(messages.SummoningErrorMessage)
+		return ""
 	}
 
 	return response.Choices[0].Message.Content
