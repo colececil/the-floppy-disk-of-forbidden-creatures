@@ -1,6 +1,6 @@
 # The Floppy Disk of Forbidden Creatures
 
-_**An entry for Ludum Dare 55: "Summoning". Created in under 72 hours by Cole Cecil.**_
+_**This began as an entry for Ludum Dare 55: "Summoning", by Cole Cecil. The initial version (v1.0.0) was created in under 72 hours.**_
 
 What awaits you when you explore the contents of the Floppy Disk of Forbidden Creatures? A summoning, to be sure, but what will you summon? And what consequences will it bring?
 
