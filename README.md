@@ -39,7 +39,7 @@ make build-all
 To build the game for a single operating system and architecture, run the following command from the project root, where `<osName>` is one of `windows`, `darwin` or `linux`, and `<architectureName>` is one of `amd64` or `arm64`:
 
 ```
-make  build OS=<osName> ARCH=<architectureName>
+make build OS=<osName> ARCH=<architectureName>
 ```
   
 ## Attributions
