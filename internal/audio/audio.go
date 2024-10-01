@@ -51,7 +51,7 @@ func Play(filename SoundEffectFilename, fileSegmentIndex *int, allowOverlap bool
 	dirOfExecutable := filepath.Dir(pathToExecutable)
 
 	path := filepath.Join(dirOfExecutable, "assets", "audio", string(filename))
-	file, err := os.Open(path)
+	file, err := os.Open(path) // file is closed by the streamer when the streamer is closed.
 	if err != nil {
 		setCurrentlyPlaying(originalFilename, false)
 		return err
@@ -66,7 +66,6 @@ func Play(filename SoundEffectFilename, fileSegmentIndex *int, allowOverlap bool
 	// Make sure the streamer's sample rate matches the speaker's sample rate.
 	resampledStreamer := beep.Resample(4, format.SampleRate, speakerSampleRate, streamer)
 
-	//speaker.Play(resampledStreamer)
 	speaker.Play(beep.Seq(resampledStreamer, beep.Callback(func() {
 		setCurrentlyPlaying(originalFilename, false)
 		_ = streamer.Close()
