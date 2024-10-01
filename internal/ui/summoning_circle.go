@@ -3,9 +3,22 @@ package ui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
+
+var asciiArt string
+
+// init loads the summoning circle ASCII art from the assets directory.
+func init() {
+	var err error
+	asciiArt, err = loadAsciiArt()
+	if err != nil {
+		panic(err)
+	}
+}
 
 // SummoningCircle is a UI component for displaying the summoning circle. It implements the tea.Model interface.
 type SummoningCircle struct {
@@ -70,27 +83,19 @@ func (c SummoningCircle) View() string {
 	return CenterVertically(TerminalHeight, view)
 }
 
-const asciiArt = "            ,,ooo000000000000ooo,,            \n" +
-	"        ,oP''                    ''^o.        \n" +
-	"      ,d\"     ,,ooo00000000ooo,,     \"b.      \n" +
-	"    .&'    ,dP'    A           '^b.    '&.    \n" +
-	"   .&    dP\"      d^V,            \"^b    &.   \n" +
-	"  d&   .&'       ,8  V,             '&.   &b  \n" +
-	" ,P   .&         d!   !b              &.   ^. \n" +
-	" 8   .&         ,8     'V,             &.   8 \n" +
-	".8   8          d!   ____V,===oo888PP87 8   8.\n" +
-	"8   .8<=ooooood8999PPP***'V,       ,0'  8.   8\n" +
-	"8   8' '&i_    d!          !b   ,0\"'    '8   8\n" +
-	"8   8    '\"b_ ,8            'V~7'        8   8\n" +
-	"8   8      ''8!!           ,0\"0,         8   8\n" +
-	"8   8.       ,8\"&._      ,0\"   V,       .8   8\n" +
-	"8   `8       d!   '\"&>,~7'      !b      8'   8\n" +
-	"`8   8      ,8      ,0\"<9b._     'V,    8   8'\n" +
-	" 8   `8     d!    ,0\"     '\"7&i,_  V,  d'   8 \n" +
-	" `8   `b   ,8  ,~7'            '\"\"liJ,d'   8' \n" +
-	"  `b   `b. !',0\"                    .d'   d'  \n" +
-	"   `b    *bL%'                    .d*    d'   \n" +
-	"    `*.    `*b.                .d*'    .*'    \n" +
-	"      `*b.    ``***00000000***''    .d*'      \n" +
-	"         `*b..                  ..d*'         \n" +
-	"             `***000000000000***'             "
+// loadAsciiArt loads the summoning circle ASCII art from the assets directory.
+func loadAsciiArt() (string, error) {
+	pathToExecutable, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	dirOfExecutable := filepath.Dir(pathToExecutable)
+
+	path := filepath.Join(dirOfExecutable, "assets/ascii_art/summoning_circle.txt")
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
+}
